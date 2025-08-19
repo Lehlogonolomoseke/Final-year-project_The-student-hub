@@ -1,0 +1,25 @@
+# Env files
+.env
+backend/.env
+frontend/.env
+
+# Composer dependencies (PHP)
+backend/vendor/
+composer.lock
+vendor/
+
+# Node.js dependencies
+frontend/node_modules/
+frontend/.next/
+frontend/build/
+frontend/dist/
+node_modules/
+
+# OS or IDE files
+.DS_Store
+Thumbs.db
+*.log
+*.cache
+*.env.local
+*.env.development.local
+*.env.production.local

@@ -1,0 +1,129 @@
+[33mcommit ebfec29ab18c8fc6236f297aa2545e651ce82c2c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Lehlogonolomoseke <lehlogonolomoseke@gmail.com>
+Date:   Tue Jul 15 12:34:43 2025 +0200
+
+    Dasshboard UI
+
+[33mcommit 898a4b9f5c23331463e9e3b94337561c32dafffa[m
+Author: karabo221 <karaboramana2k@gmail.com>
+Date:   Tue Jul 15 10:47:51 2025 +0200
+
+    Fixed merge conflicts
+
+[33mcommit d2fc455254ecb7fa92288085c24620387c337c42[m
+Author: Lehlogonolomoseke <lehlogonolomoseke@gmail.com>
+Date:   Tue Jul 15 00:52:31 2025 +0200
+
+    Update App.js
+
+[33mcommit 12514fad918590892799774f7203413ebeddfb55[m
+Author: Lehlogonolomoseke <lehlogonolomoseke@gmail.com>
+Date:   Tue Jul 15 00:50:15 2025 +0200
+
+    Added the adminDashboard for frontend
+
+[33mcommit e59f48a12aa7f3999f28682098035d6f9df3f039[m
+Author: karabo221 <karaboramana2k@gmail.com>
+Date:   Mon Jul 14 19:35:59 2025 +0200
+
+    Left to finish event and Notifications
+
+[33mcommit d5f40a383f03f03ec84e8cda7e23be91a32720a6[m
+Author: karabo221 <karaboramana2k@gmail.com>
+Date:   Mon Jul 7 00:04:11 2025 +0200
+
+    Events page to do and reports handling this week
+
+[33mcommit 11acf89fdda4bbc19c8446a79da1773184410445[m
+Author: karabo221 <karaboramana2k@gmail.com>
+Date:   Fri Jul 4 14:42:27 2025 +0200
+
+    commiting local changes before pulling
+
+[33mcommit d6783d7f12d27e7a7d0f7ec1d9ba5428a4f611cf[m
+Author: Lehlogonolomoseke <lehlogonolomoseke@gmail.com>
+Date:   Fri Jul 4 15:33:09 2025 +0200
+
+    Updated the navigation bar between login page and home page
+
+[33mcommit 0c68eed89cfbe139ee74a7616d6780aad61c42e1[m
+Author: Lehlogonolomoseke <lehlogonolomoseke@gmail.com>
+Date:   Fri Jul 4 01:54:53 2025 +0200
+
+    Update Navbar.css
+
+[33mcommit f94665b822e07b81e9806ff19b0b5dbc7cbd2252[m
+Author: Lehlogonolomoseke <lehlogonolomoseke@gmail.com>
+Date:   Fri Jul 4 01:48:38 2025 +0200
+
+    Updated the website title name
+
+[33mcommit 3927ccb658a042728febb5864c67d5175d76e4ac[m
+Author: Lehlogonolomoseke <lehlogonolomoseke@gmail.com>
+Date:   Fri Jul 4 01:18:53 2025 +0200
+
+    Build responsive Home page with adaptive navbar, Web3Forms contact integration, and styles; update .gitignore
+    
+    - Developed full Home page UI for Student Hub with all main sections
+    - Made all buttons responsive and ensured layout adjusts smoothly on various screen sizes
+    - Implemented adaptive navbar with slide menu behavior on smaller screens
+    - Integrated Contact Us form with Web3Forms for submission handling
+    - Updated and connected all necessary CSS files for Home page components
+    - Updated .gitignore to properly exclude unnecessary files
+    - Connected frontend components to JS and JSX files
+    - Set up routing and navigation for existing pages
+    - Prepared Dayhouses and Societies pages (structure in place; content pending)
+
+[33mcommit 4aa7d62e996ea1d987e5ff636fb55d1e6e1a5654[m
+Author: karabo221 <163394104+karabo221@users.noreply.github.com>
+Date:   Thu Jun 26 22:21:38 2025 +0200
+
+    Create README.md
+
+[33mcommit b972a15af5f68ed95f11885846a91b20618dc0fa[m
+Author: karabo221 <karaboramana2k@gmail.com>
+Date:   Tue Jun 24 22:24:05 2025 +0200
+
+    Search function/frontend done backend left and create profile done
+
+[33mcommit 8a436ca506b52e4a3d7a891d62bb3eb41d087610[m
+Author: karabo221 <karaboramana2k@gmail.com>
+Date:   Mon Jun 23 00:14:59 2025 +0200
+
+    Creation of Society Done setting profile should be done tomorrow hopefully
+
+[33mcommit 0f41f84421ade7cf3d9a441299e7753840a49495[m
+Author: karabo221 <karaboramana2k@gmail.com>
+Date:   Sat Jun 21 00:40:59 2025 +0200
+
+    skeleton for society Creation database done
+
+[33mcommit 508800aad2149bc02f912872e210618c7be0cdcd[m
+Author: karabo221 <karaboramana2k@gmail.com>
+Date:   Thu Jun 19 23:32:21 2025 +0200
+
+    Event creation page frontend and backend
+
+[33mcommit cc35d7d84b5a72bf1a9cf22dcab00f0514cb907f[m
+Author: karabo221 <karaboramana2k@gmail.com>
+Date:   Thu Jun 19 01:06:27 2025 +0200
+
+    Convert frontend from submodule to regular directory
+
+[33mcommit f5b914722ddabcd3fc08c58a4b3b9ed5f7fbf43d[m
+Author: karabo221 <karaboramana2k@gmail.com>
+Date:   Thu Jun 19 01:05:22 2025 +0200
+
+    Remove frontend submodule
+
+[33mcommit 2a7c2c91c8b25322d9ec4482c4268b435df66616[m
+Author: karabo221 <karaboramana2k@gmail.com>
+Date:   Thu Jun 19 00:36:49 2025 +0200
+
+    commit
+
+[33mcommit 11d8f7cc114168a80add38f53e6d34c29b7d8397[m
+Author: karabo221 <karaboramana2k@gmail.com>
+Date:   Sun Jun 15 02:10:41 2025 +0200
+
+    Initial commit: frontend and backend

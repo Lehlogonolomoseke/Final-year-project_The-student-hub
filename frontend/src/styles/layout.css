@@ -1,0 +1,265 @@
+/* ===== Layout Containers ===== */
+.admin-layout,
+.sp-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f4f4f4;
+  overflow-x: hidden;
+}
+
+/* ===== Sidebar Base ===== */
+.admin-sidebar,
+.sp-sidebar {
+  width: 240px;
+  background-color: #2e2e48;
+  color: #fff;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+/* ===== Logo Section ===== */
+.admin-sidebar .logo-section,
+.sp-sidebar .logo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.uj-logo {
+  width: 60px;
+  height: auto;
+  margin-bottom: 0.5rem;
+}
+
+/* ===== Navigation Links ===== */
+.admin-nav .nav-link,
+.sp-nav .nav-link {
+  display: flex;
+  align-items: center;
+  font-size: 1.05rem;
+  font-weight: 500;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 0.7rem;
+  color: #d1d1d1;
+  text-decoration: none;
+  border-radius: 8px;
+  gap: 10px;
+  transition: all 0.2s ease;
+  line-height: 1.3; /* better readability */
+  white-space: normal; /* allow wrapping */
+  overflow: hidden;
+  word-break: break-word; /* break long words */
+}
+
+/* ===== Text inside links ===== */
+.admin-nav .nav-link span,
+.sp-nav .nav-link span {
+  flex: 1;
+  overflow-wrap: break-word;
+}
+
+/* ===== Admin Sidebar Hover & Active ===== */
+.admin-nav .nav-link:hover {
+  background-color: #7b1fa2;
+  color: #fff;
+}
+
+.admin-nav .nav-link.active {
+  background-color: #f38405;
+  color: #fff;
+  font-weight: 600;
+}
+
+.admin-nav .nav-link.active svg {
+  color: #fff;
+}
+
+/* ===== SP Sidebar Hover & Active ===== */
+.sp-nav .nav-link:hover {
+  background-color: #444;
+  color: #fff;
+}
+
+.sp-nav .nav-link.active {
+  background-color: #ff9800;
+  color: #fff;
+}
+
+.sp-nav .nav-link.active svg {
+  color: #fff;
+}
+
+/* ===== Icons ===== */
+.admin-nav .nav-link svg,
+.sp-nav .nav-link svg {
+  display: inline-block;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+  color: #d1d1d1;
+}
+
+/* ===== Active Icon ===== */
+.admin-nav .nav-link.active svg,
+.sp-nav .nav-link.active svg {
+  color: #fff;
+}
+
+/* ===== Logout Button ===== */
+.logout-btn {
+  margin-top: 1rem;
+  background-color: #d30000;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.8rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  background-color: #f38405;
+}
+
+/* ===== Content Area ===== */
+.admin-content,
+.sp-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* ===== Page & Table Styles ===== */
+.page-container {
+  width: 100%;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  margin: 0;
+}
+
+/* Header + sort buttons */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.page-header h1 {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #2e2e48;
+}
+
+.sort-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sort-buttons button {
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+/* Table wrapper */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* Table */
+.MuiTable-root {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 1000px;
+}
+
+.MuiTableHead-root .MuiTableCell-root {
+  font-weight: bold;
+  color: #2e2e48;
+  text-align: center;
+  padding: 8px 12px;
+}
+
+.MuiTableCell-root {
+  text-align: center;
+  padding: 8px 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Column widths */
+.MuiTableCell-root:nth-child(1) { width: 80px; }
+.MuiTableCell-root:nth-child(2) { width: 150px; }
+.MuiTableCell-root:nth-child(3) { width: 200px; }
+.MuiTableCell-root:nth-child(4) { width: 120px; }
+.MuiTableCell-root:nth-child(5) { width: 120px; }
+.MuiTableCell-root:nth-child(6) { width: 150px; }
+.MuiTableCell-root:nth-child(7),
+.MuiTableCell-root:nth-child(8),
+.MuiTableCell-root:nth-child(9),
+.MuiTableCell-root:nth-child(10) { width: 140px; }
+
+/* Chips inside cells */
+.chip-small,
+.MuiChip-root {
+  display: inline-block;
+  max-width: 100%;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+/* Buttons inside cells */
+.MuiTableCell-root button {
+  white-space: nowrap;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .MuiToggleButtonGroup-root {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .table-wrapper {
+    overflow-x: scroll;
+  }
+
+  .admin-sidebar,
+  .sp-sidebar {
+    width: 200px;
+    padding: 1rem 0.75rem;
+  }
+
+  .logout-btn {
+    font-size: 0.95rem;
+    padding: 0.7rem 1rem;
+  }
+}

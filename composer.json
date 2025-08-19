@@ -1,0 +1,22 @@
+{
+    "name": "karab/student-hub",
+    "description": "Student hub designed for three users management students and admin all having different features",
+    "type": "project",
+    "require": {
+        "laravel/framework": "^11.0",
+        "minishlink/web-push": "^9.0"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Karab\\StudentHub\\": "app/"
+        }
+    },
+    "authors": [
+        {
+            "name": "karabo221",
+            "email": "karaboramana2k@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable"
+}

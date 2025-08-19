@@ -1,0 +1,104 @@
+#version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: student-hub-db
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: student_hub
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d
+    networks:
+      - student-hub-network
+
+  # PHP Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: student-hub-backend
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend:/var/www/html # Mounts your PHP application code
+      - ./uploads:/var/www/html/uploads # <-- UPDATED: Mounts host's 'uploads' to Apache's web root
+      - /var/www/html/vendor # This is typically for Composer dependencies
+    environment:
+      # MySQL Environment Variables
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASS=
+      - DB_NAME=student_hub
+      # Supabase Environment Variables (optional - you can still hardcode in PHP)
+      - SUPABASE_HOST=db.vmsqqjqozkkywkkcnuws.supabase.co
+      - SUPABASE_PORT=5432
+      - SUPABASE_DB=postgres
+      - SUPABASE_USER=postgres
+      - SUPABASE_PASSWORD=Team44_Project
+    depends_on:
+      - mysql
+    networks:
+      - student-hub-network
+    # Command to set permissions on the mounted uploads directory
+    # The path here must match the new volume mount target
+    command: >
+      bash -c "chown -R www-data:www-data /var/www/html/uploads && # <-- UPDATED PATH
+               chmod 775 /var/www/html/uploads && # <-- UPDATED PATH
+               apache2-foreground"
+    user: root # Temporarily run as root to allow permission changes
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: student-hub-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"  # Development server on port 3000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - FAST_REFRESH=true
+      # Optional: Add backend API URL for frontend to use
+      - REACT_APP_API_URL=http://localhost:8000
+    stdin_open: true
+    tty: true
+    depends_on:
+      - backend
+    networks:
+      - student-hub-network
+
+  # phpMyAdmin (optional - for database management)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: student-hub-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ""
+    depends_on:
+      - mysql
+    networks:
+      - student-hub-network
+
+volumes:
+  mysql_data:
+
+networks:
+  student-hub-network:
+    driver: bridge
