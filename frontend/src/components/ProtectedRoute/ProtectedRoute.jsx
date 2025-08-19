@@ -44,9 +44,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
     if (!hasAllowedRole) {
       console.log(
-        `Access denied. User role '${userRole}' is not in allowed roles: ${allowedRoles.join(
-          ", "
-        )}`
+        `Access denied. User role '${userRole}' is not in allowed roles: ${allowedRoles.join(", ")}`
       );
       return <Navigate to="/login" replace />;
     }

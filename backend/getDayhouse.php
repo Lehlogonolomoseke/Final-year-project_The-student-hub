@@ -44,7 +44,7 @@ try {
         ];
     }
     
-    // Return the expected format that matches your React code
+
     echo json_encode([
         'success' => true,
         'dayhouses' => $dayhouses

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+import PropTypes from "prop-types";
 
+// Step 1 Form Component
 const Step1Form = ({
   formData,
   handleInputChange,
@@ -209,6 +211,47 @@ const Step1Form = ({
   );
 };
 
+// PropTypes for Step1Form
+Step1Form.propTypes = {
+  formData: PropTypes.shape({
+    preferred_venue: PropTypes.string,
+    alternative_venue_1: PropTypes.string,
+    alternative_venue_2: PropTypes.string,
+    booking_date: PropTypes.string,
+    start_time: PropTypes.string,
+    end_time: PropTypes.string,
+    special_requirements: PropTypes.string,
+    furniture_required: PropTypes.bool,
+    furniture_types: PropTypes.arrayOf(PropTypes.string),
+    other_furniture_details: PropTypes.string,
+    acknowledge_rules: PropTypes.bool,
+  }).isRequired,
+  handleInputChange: PropTypes.func.isRequired,
+  handleFileUpload: PropTypes.func.isRequired,
+  uploadStatus: PropTypes.shape({
+    uploading: PropTypes.bool,
+    success: PropTypes.bool,
+    error: PropTypes.string,
+  }).isRequired,
+  uploadedFile: PropTypes.shape({
+    file_name: PropTypes.string,
+  }),
+  errors: PropTypes.shape({
+    preferred_venue: PropTypes.string,
+    booking_date: PropTypes.string,
+    start_time: PropTypes.string,
+    end_time: PropTypes.string,
+    event_document: PropTypes.string,
+    acknowledge_rules: PropTypes.string,
+  }),
+};
+
+Step1Form.defaultProps = {
+  uploadedFile: null,
+  errors: {},
+};
+
+// Progress Indicator Component
 const ProgressIndicator = ({ currentStep }) => {
   const steps = ["Event Details", "Cost Details", "Review & Submit"];
   return (
@@ -240,6 +283,12 @@ const ProgressIndicator = ({ currentStep }) => {
   );
 };
 
+// PropTypes for ProgressIndicator
+ProgressIndicator.propTypes = {
+  currentStep: PropTypes.number.isRequired,
+};
+
+// Main Event Proposal Form Component
 const EventProposalForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({

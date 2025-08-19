@@ -11,11 +11,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Clear all session data
 session_destroy();
 
 echo json_encode([
     'success' => true,
-    'message' => 'Logged out successfully'
+    'message' => 'Logged out'
 ]);
 ?>

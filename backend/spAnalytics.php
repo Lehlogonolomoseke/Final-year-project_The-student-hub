@@ -35,6 +35,7 @@ try {
         'uploads' => [],
         'societies' => [],
         'events' => [],
+        'budgets' => [],
         'recentUploads' => []
     ];
 
@@ -82,23 +83,33 @@ try {
         'byStatus' => $uploadsByStatus
     ];
 
-    // 2. SOCIETIES ANALYTICS
+    // 2. SOCIETIES ANALYTICS (FIXED)
     // Get total societies count
     $totalSocietiesQuery = "SELECT COUNT(*) as total FROM societies";
     $stmt = $pdo->prepare($totalSocietiesQuery);
     $stmt->execute();
     $totalSocieties = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-    // Get top societies by member count
+    // Get total members count - FIXED: removed status filter since column doesn't exist
+    $totalMembersQuery = "SELECT COUNT(*) as total_members FROM society_members";
+    $stmt = $pdo->prepare($totalMembersQuery);
+    $stmt->execute();
+    $totalMembers = $stmt->fetch(PDO::FETCH_ASSOC)['total_members'];
+
+    // Get top societies by member count - FIXED: removed status filter
     $topSocietiesQuery = "
         SELECT 
             s.society_id,
             s.name,
-            COUNT(sm.member_id) as members
+            COALESCE(member_counts.members, 0) as members
         FROM societies s
-        LEFT JOIN society_members sm ON s.society_id = sm.society_id
-        WHERE sm.status = 'active' OR sm.status IS NULL
-        GROUP BY s.society_id, s.name
+        LEFT JOIN (
+            SELECT 
+                society_id,
+                COUNT(*) as members
+            FROM society_members 
+            GROUP BY society_id
+        ) member_counts ON s.society_id = member_counts.society_id
         ORDER BY members DESC
         LIMIT 10
     ";
@@ -117,6 +128,7 @@ try {
 
     $analyticsData['societies'] = [
         'total' => (int)$totalSocieties,
+        'totalMembers' => (int)$totalMembers,
         'topSocieties' => $topSocietiesFormatted
     ];
 
@@ -184,19 +196,112 @@ try {
         'monthlyEvents' => $monthlyEventsFormatted
     ];
 
-    // 4. RECENT UPLOADS
+    // 4. BUDGET ANALYTICS (FIXED TO ONLY COUNT 'accepted' STATUS)
+    // Get total budget for accepted uploads only - FIXED: changed 'approved' to 'accepted'
+    $totalBudgetQuery = "
+        SELECT 
+            COALESCE(SUM(ec.budget), 0) as total_budget,
+            COUNT(ec.id) as total_budget_entries,
+            COUNT(DISTINCT ec.upload_id) as uploads_with_budget
+        FROM event_costs ec
+        INNER JOIN uploads u ON ec.upload_id = u.upload_id
+        WHERE u.status = 'accepted'
+    ";
+    $stmt = $pdo->prepare($totalBudgetQuery);
+    $stmt->execute();
+    $budgetStats = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Get average budget per accepted upload - FIXED: changed 'approved' to 'accepted'
+    $avgBudgetQuery = "
+        SELECT 
+            AVG(ec.budget) as avg_budget
+        FROM event_costs ec
+        INNER JOIN uploads u ON ec.upload_id = u.upload_id
+        WHERE u.status = 'accepted' AND ec.budget > 0
+    ";
+    $stmt = $pdo->prepare($avgBudgetQuery);
+    $stmt->execute();
+    $avgBudget = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Get top budgets by upload (only accepted) - FIXED: changed 'approved' to 'accepted'
+    $topBudgetsQuery = "
+        SELECT 
+            ec.budget,
+            ec.name as budget_name,
+            u.upload_id,
+            u.event_date,
+            ec.comments
+        FROM event_costs ec
+        INNER JOIN uploads u ON ec.upload_id = u.upload_id
+        WHERE u.status = 'accepted'
+        ORDER BY ec.budget DESC
+        LIMIT 10
+    ";
+    $stmt = $pdo->prepare($topBudgetsQuery);
+    $stmt->execute();
+    $topBudgets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Format top budgets - FIXED: changed file_name to upload_id since file_name doesn't exist in uploads table
+    $topBudgetsFormatted = array_map(function($budget) {
+        return [
+            'budgetName' => $budget['budget_name'],
+            'amount' => (float)$budget['budget'],
+            'uploadId' => $budget['upload_id'],
+            'eventDate' => $budget['event_date'],
+            'comments' => $budget['comments']
+        ];
+    }, $topBudgets);
+
+    // Get budget distribution by month (last 6 months, only accepted) - FIXED: changed 'approved' to 'accepted'
+    $monthlyBudgetQuery = "
+        SELECT 
+            TO_CHAR(u.uploaded_at, 'Mon YYYY') as month,
+            SUM(ec.budget) as total_budget,
+            COUNT(ec.id) as budget_count
+        FROM event_costs ec
+        INNER JOIN uploads u ON ec.upload_id = u.upload_id
+        WHERE u.status = 'accepted' 
+        AND u.uploaded_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'
+        GROUP BY TO_CHAR(u.uploaded_at, 'Mon YYYY'), DATE_TRUNC('month', u.uploaded_at)
+        ORDER BY DATE_TRUNC('month', u.uploaded_at)
+        LIMIT 6
+    ";
+    $stmt = $pdo->prepare($monthlyBudgetQuery);
+    $stmt->execute();
+    $monthlyBudgets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Format monthly budget data
+    $monthlyBudgetsFormatted = array_map(function($month) {
+        return [
+            'month' => $month['month'],
+            'totalBudget' => (float)$month['total_budget'],
+            'budgetCount' => (int)$month['budget_count']
+        ];
+    }, $monthlyBudgets);
+
+    $analyticsData['budgets'] = [
+        'totalBudget' => (float)$budgetStats['total_budget'],
+        'totalBudgetEntries' => (int)$budgetStats['total_budget_entries'],
+        'uploadsWithBudget' => (int)$budgetStats['uploads_with_budget'],
+        'averageBudget' => $avgBudget['avg_budget'] ? (float)$avgBudget['avg_budget'] : 0,
+        'topBudgets' => $topBudgetsFormatted,
+        'monthlyBudgets' => $monthlyBudgetsFormatted
+    ];
+
+    // 5. RECENT UPLOADS - FIXED: removed file_name reference and user join issues
     $recentUploadsQuery = "
         SELECT 
             u.upload_id,
-            u.file_name,
             u.uploaded_by,
             u.event_date,
             u.status,
             u.days_until_event,
             u.uploaded_at,
-            CONCAT(up.first_name, ' ', up.last_name) as uploader_name
+            COALESCE(SUM(ec.budget), 0) as total_budget
         FROM uploads u
-        LEFT JOIN users up ON u.uploaded_by = up.id
+        LEFT JOIN event_costs ec ON u.upload_id = ec.upload_id
+        GROUP BY u.upload_id, u.uploaded_by, u.event_date, u.status, 
+                 u.days_until_event, u.uploaded_at
         ORDER BY u.uploaded_at DESC
         LIMIT 10
     ";
@@ -204,16 +309,16 @@ try {
     $stmt->execute();
     $recentUploads = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Format recent uploads
+    // Format recent uploads - FIXED: removed references to non-existent columns
     $recentUploadsFormatted = array_map(function($upload) {
         return [
             'id' => (int)$upload['upload_id'],
-            'fileName' => $upload['file_name'],
-            'uploadedBy' => $upload['uploader_name'] ?? 'Unknown User',
+            'uploadedBy' => $upload['uploaded_by'] ?? 'Unknown User',
             'eventDate' => $upload['event_date'],
             'status' => $upload['status'],
             'daysUntil' => $upload['days_until_event'] ? (int)$upload['days_until_event'] : 0,
-            'uploadedAt' => $upload['uploaded_at']
+            'uploadedAt' => $upload['uploaded_at'],
+            'totalBudget' => (float)$upload['total_budget']
         ];
     }, $recentUploads);
 

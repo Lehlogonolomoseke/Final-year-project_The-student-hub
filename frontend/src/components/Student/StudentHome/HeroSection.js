@@ -33,15 +33,15 @@ const HeroSection = () => {
             Browse Communities
           </Link>
           <Link
-  to="/student/event" // <-- changed from /student/events
-  className="bg-transparent border-2 border-white hover:bg-white hover:text-[#f15a22] text-white font-semibold py-3 px-6 rounded-full transition duration-300 shadow-lg"
->
-  Browse Events
-</Link>
+            to="/student/event" // <-- changed from /student/events
+            className="bg-transparent border-2 border-white hover:bg-white hover:text-[#f15a22] text-white font-semibold py-3 px-6 rounded-full transition duration-300 shadow-lg"
+          >
+            Browse Events
+          </Link>
         </div>
       </div>
     </section>
   );
 };
 
-export default HeroSection;   
+export default HeroSection;

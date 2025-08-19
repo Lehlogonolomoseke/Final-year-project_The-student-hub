@@ -21,18 +21,19 @@ if (!isset($_SESSION['id']) || $_SESSION['role'] !== 'ADMIN') {
     exit();
 }
 
-// The Admins ID
+// The Admin's ID
 $creator_id = $_SESSION['id'];
 
 $data = $_POST;
-//checking the event types
+
+// Checking the event types
 $validEventTypes = [
     'social', 'fitness', 'masterclass', 'webinar', 'conference', 
     'guest lecture', 'bootcamp', 'hackathon', 'theatre night',
     'awareness campaign', 'fundraisers', 'protest', 'other'
 ];
 
-
+// Required fields check
 $required = ['name', 'description', 'location', 'start_date', 'start_time', 'end_date', 'end_time', 'is_private', 'capacity', 'event_type'];
 foreach ($required as $field) {
     if (!isset($data[$field]) || (is_string($data[$field]) && trim($data[$field]) === '')) {
@@ -56,7 +57,7 @@ if (!is_numeric($data['capacity']) || $data['capacity'] <= 0) {
     exit();
 }
 
-// getting the inputs 
+// Getting the inputs
 $name        = trim($data['name']);
 $description = trim($data['description']);
 $location    = trim($data['location']);
@@ -64,19 +65,19 @@ $startDate   = $data['start_date'];
 $startTime   = $data['start_time'];
 $endDate     = $data['end_date'];
 $endTime     = $data['end_time'];
-// Set as boolean
 $isPrivate   = $data['is_private'] === 'true' ? 1 : 0;
 $notices     = isset($data['notices']) ? trim($data['notices']) : ''; 
 $capacity    = (int)$data['capacity'];
 $eventType   = strtolower(trim($data['event_type']));
 
-// image insertion
+// Image insertion
 $imagePath = null;
 
 if (isset($_FILES['event_image']) && $_FILES['event_image']['error'] === UPLOAD_ERR_OK) {
-    // Use a relative path that exists
     $uploadDir = __DIR__ . '/uploads/events/';
-    
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0775, true);
+    }
 
     $fileTmpPath = $_FILES['event_image']['tmp_name'];
     $fileName = basename($_FILES['event_image']['name']);
@@ -98,35 +99,42 @@ if (isset($_FILES['event_image']) && $_FILES['event_image']['error'] === UPLOAD_
         exit();
     }
 
-    // Store path in database
     $imagePath = 'uploads/events/' . $newFileName;
 }
 
+// Function to generate a secure random attendance code
+function generateAttendanceCode($length = 6) {
+    return strtoupper(substr(bin2hex(random_bytes($length)), 0, $length));
+}
+
+$attendanceCode = generateAttendanceCode();
+
 try {
-   
     $stmt = $pdo->prepare("
         INSERT INTO events 
-        (name, description, location, start_date, start_time, end_date, end_time, is_private, notices, capacity, event_type, created_by, image)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (name, description, location, start_date, start_time, end_date, end_time, is_private, notices, capacity, event_type, created_by, image, attendance_code)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING event_id
     ");
 
     $stmt->execute([
         $name, $description, $location,
         $startDate, $startTime, $endDate, $endTime,
-        $isPrivate, $notices, $capacity, $eventType, $creator_id, $imagePath
+        $isPrivate, $notices, $capacity, $eventType, $creator_id, $imagePath, $attendanceCode
     ]);
 
     $eventId = $stmt->fetchColumn();
     
     if ($eventId) {
-        echo json_encode([
-            "message" => "Event created successfully",
-            "event_id" => $eventId,
-            "capacity" => $capacity,
-            "event_type" => $eventType,
-            "notices" => $notices
-        ]);
+      echo json_encode([
+    "success" => true,
+    "message" => "Event created successfully",
+    "event_id" => $eventId,
+    "capacity" => $capacity,
+    "event_type" => $eventType,
+    "notices" => $notices,
+    "attendance_code" => $attendanceCode
+]);
     } else {
         http_response_code(500);
         echo json_encode(["error" => "Failed to create event"]);

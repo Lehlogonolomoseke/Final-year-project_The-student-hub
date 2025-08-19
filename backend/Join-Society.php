@@ -6,9 +6,6 @@ header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Access-Control-Allow-Credentials: true");
 header('Content-Type: application/json');
 
-// Enable error reporting for debugging (remove in production)
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -23,26 +20,25 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
-    // Debug: Check if db_supabase.php exists
+    
     if (!file_exists("db_supabase.php")) {
         throw new Exception("Database connection file not found");
     }
     
     require_once "db_supabase.php";
     
-    // Debug: Check if function exists
+    
     if (!function_exists('getSupabaseConnection')) {
         throw new Exception("getSupabaseConnection function not found");
     }
     
     $pdo = getSupabaseConnection();
     
-    // Debug: Check PDO connection
     if (!$pdo) {
         throw new Exception("Failed to get database connection");
     }
     
-    // Check if user is logged in
+     //user id
     $user_id = $_SESSION['id'] ?? null;
     
     if (!$user_id) {
@@ -57,7 +53,7 @@ try {
     // Get input data
     $input = json_decode(file_get_contents('php://input'), true);
     
-    // Debug: Log the input
+
     error_log("Input received: " . json_encode($input));
     
     if (!$input || !isset($input['society_id'])) {
@@ -71,7 +67,6 @@ try {
     
     $society_id = $input['society_id'];
     
-    // Debug: Validate society_id is numeric (if it should be)
     if (!is_numeric($society_id)) {
         echo json_encode([
             'success' => false,
@@ -79,8 +74,6 @@ try {
         ]);
         exit;
     }
-    
-    // Validate that the society exists
     $societyStmt = $pdo->prepare("SELECT society_id FROM societies WHERE society_id = ?");
     if (!$societyStmt) {
         throw new Exception("Failed to prepare society validation query: " . implode(", ", $pdo->errorInfo()));
@@ -97,8 +90,7 @@ try {
         ]);
         exit;
     }
-    
-    // Check if user is already a member or has a pending request
+
     $memberStmt = $pdo->prepare("SELECT status FROM society_members WHERE user_id = ? AND society_id = ?");
     if (!$memberStmt) {
         throw new Exception("Failed to prepare membership check query: " . implode(", ", $pdo->errorInfo()));
@@ -126,9 +118,7 @@ try {
             exit;
         }
     }
-    
-    // Insert membership request - Check if your table uses TIMESTAMP or DATETIME
-    // Also check if your database supports NOW() function
+
     $insertStmt = $pdo->prepare("
         INSERT INTO society_members (society_id, user_id, joined_at, status) 
         VALUES (?, ?, CURRENT_TIMESTAMP, 'pending')

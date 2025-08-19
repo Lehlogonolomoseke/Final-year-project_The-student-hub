@@ -5,7 +5,6 @@ header('Access-Control-Allow-Headers: Content-Type');
 header('Access-Control-Allow-Credentials: true');
 header('Content-Type: application/json');
 
-// Handle preflight OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
@@ -13,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 session_start();
 
-// Check user authentication
+
 if (!isset($_SESSION['id'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'error' => 'Unauthorized']);
@@ -28,7 +27,7 @@ try {
     $pdo = getSupabaseConnection();
 
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-        // Fetch RSVP status for user & event
+        
         $event_id = intval($_GET['event_id'] ?? 0);
         if ($event_id <= 0) {
             http_response_code(400);
@@ -48,7 +47,7 @@ try {
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        // Receive and validate JSON input
+     
         $input = json_decode(file_get_contents('php://input'), true);
 
         if (!$input) {

@@ -31,9 +31,7 @@ try {
         throw new Exception('Database connection failed');
     }
 
-    // =========================
-    // GET request - fetch details
-    // =========================
+
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (!isset($_GET['id'])) {
             throw new Exception("Dayhouse ID is required");
@@ -59,7 +57,7 @@ try {
         $sports = array_column($sportsStmt->fetchAll(PDO::FETCH_ASSOC), 'name');
 
         $isAlreadyJoined = false;
-        // FIXED: Use the session variable that login.php actually sets
+
         if (!empty($_SESSION['id'])) {
             $userId = $_SESSION['id'];
             $checkJoinStmt = $pdo->prepare("
@@ -87,12 +85,10 @@ try {
         ]);
     }
 
-    // =========================
-    // POST request - join dayhouse
-    // =========================
+
     elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-        // FIXED: Use the session variable that login.php actually sets
+
         if (empty($_SESSION['id'])) {
             sendJsonResponse(['success' => false, 'message' => 'User not logged in'], 401);
         }
@@ -162,9 +158,7 @@ try {
         }
     }
 
-    // =========================
-    // Invalid method
-    // =========================
+ 
     else {
         sendJsonResponse(['success' => false, 'message' => 'Method not allowed'], 405);
     }
