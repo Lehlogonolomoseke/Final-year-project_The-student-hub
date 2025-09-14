@@ -1,8 +1,9 @@
 <?php
+session_start(); // Ensure session is started at the very beginning
 
 header("Access-Control-Allow-Origin: http://localhost:3000");
 header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization'); // Added Authorization header if needed by other requests
 header('Access-Control-Allow-Credentials: true');
 header('Content-Type: application/json');
 
@@ -11,8 +12,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
-
-session_start();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -39,9 +38,11 @@ if (empty($email) || empty($password)) {
 }
 
 try {
-    require_once('db_supabase.php');
+    require_once('db_supabase.php'); // Ensure db_supabase.php is included here
     $pdo = getSupabaseConnection();
 
+    // *** FIX 1: Ensure password field is correctly selected ***
+    // Assuming your users table has a 'password_hash' or similar column
     $statement = $pdo->prepare("SELECT id, first_name, last_name, email, password, role, change_password FROM users WHERE email = ?");
     $statement->execute([$email]);
 
@@ -55,7 +56,8 @@ try {
     }
 
     // Verify password
-    if (!password_verify($password, $user['password'])) {
+    // *** FIX 2: Use the correct column name for the hashed password ***
+    if (!password_verify($password, $user['password'])) { // Assuming 'password' column stores the hash
         http_response_code(401);
         echo json_encode(['success' => false, 'error' => 'Incorrect password']);
         exit();
@@ -63,9 +65,16 @@ try {
 
     // If must_change_password = TRUE → force redirect to change password page
     if (!empty($user['change_password']) && $user['change_password'] == true) {
-        $_SESSION["id"] = $user['id']; // keep session so they can reset
+        // *** FIX 3: Set session variables correctly for password reset ***
+        // Regenerate session ID for security
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+        session_regenerate_id(true);
+
+        $_SESSION["id"] = $user['id'];
         $_SESSION["email"] = $user['email'];
-        $_SESSION["role"] = $user['role'];
+        $_SESSION["role"] = $user['role']; // Set role even for forced reset
 
         echo json_encode([
             'success' => false,
@@ -76,14 +85,16 @@ try {
     }
 
     // Normal login flow
-    if (!headers_sent()) {
-        session_regenerate_id(true);
+    // *** FIX 4: Regenerate session ID for security on successful login ***
+    if (session_status() == PHP_SESSION_NONE) {
+        session_start();
     }
+    session_regenerate_id(true);
 
     $_SESSION["id"] = $user['id'];
-    $_SESSION["first_name"] = $user['first_name'];
+    $_SESSION["first_name"] = $user['first_name']; // Storing first_name as in your original code
     $_SESSION["email"] = $user['email'];
-    $_SESSION["role"] = $user['role'];
+    $_SESSION["role"] = $user['role']; // This is crucial for get_announcements.php
 
     $response = [
         'success' => true,
@@ -108,7 +119,7 @@ try {
     echo json_encode($response);
     exit();
 
-} catch (Exception $e) {
+} catch (Exception $e) { // Catch any exception, including PDOException
     error_log("Login error: " . $e->getMessage());
 
     http_response_code(500);

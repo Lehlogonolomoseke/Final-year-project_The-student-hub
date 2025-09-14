@@ -54,6 +54,12 @@ const SPSidebar = () => {
         >
           <FaMapMarkedAlt /> <span>Venue Availability</span>
         </NavLink>
+        <NavLink
+          to="/sp/view_reports"
+          className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+        >
+          <FaMapMarkedAlt /> <span>Reports</span>
+        </NavLink>
 
         <div className="sp-logout">
           <button className="logout-btn" onClick={handleLogout}>

@@ -64,10 +64,10 @@ try {
                 throw new Exception('Email already exists');
             }
 
-            // Hash the password
+       
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-            // Insert user - FIXED: Remove the fetch() call and use lastInsertId()
+            
             $stmt = $pdo->prepare("
                 INSERT INTO users (first_name, last_name, email, password, role, change_password) 
                 VALUES (?, NULL, ?, ?, 'ADMIN', TRUE)

@@ -1,5 +1,4 @@
 <?php
-
 ob_start();
 session_start();
 
@@ -37,7 +36,6 @@ try {
 
     $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
 
-    // JSON-based response submission
     if (str_contains($contentType, 'application/json')) {
         $rawInput = file_get_contents('php://input');
         $input = json_decode($rawInput, true);
@@ -48,7 +46,7 @@ try {
 
         $venue_details = $input['venue_details'] ?? '';
         $comments = $input['comments'] ?? '';
-        $fileId = $input['fileId'] ?? null;
+        $fileId = $input['fileId'] ?? null;   // upload_id
         $response_type = $input['response_type'] ?? null;
         $adminId = $_SESSION['id'];
 
@@ -56,7 +54,7 @@ try {
             sendJsonResponse(['error' => 'Missing required fields: fileId or response_type'], 400);
         }
 
-        // Get society ID
+        // Get society ID from upload
         $society_stmt = $pdo->prepare("
             SELECT s.society_id 
             FROM uploads u 
@@ -95,68 +93,18 @@ try {
             $update->execute([$response_type, $fileId]);
 
             $pdo->commit();
-            sendJsonResponse(['success' => true, 'message' => 'Response submitted successfully']);
+
+            // 🔑 Return upload_id so Admin/SP can use it when creating event
+            sendJsonResponse([
+                'success' => true, 
+                'message' => 'Response submitted successfully',
+                'upload_id' => $fileId
+            ]);
 
         } catch (Exception $e) {
             $pdo->rollBack();
             sendJsonResponse(['error' => 'Transaction failed: ' . $e->getMessage()], 500);
         }
-    }
-
-    // File upload handler (for admin file submission)
-    elseif (!empty($_FILES['file'])) {
-        $allowed_types = ['pdf', 'docx', 'zip'];
-        $file_name = $_FILES['file']['name'];
-        $file_tmp = $_FILES['file']['tmp_name'];
-        $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-
-        if (!in_array($file_ext, $allowed_types)) {
-            sendJsonResponse(['error' => 'Invalid file type'], 400);
-        }
-
-        if ($_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-            sendJsonResponse(['error' => 'File upload error'], 400);
-        }
-
-        $file_type = mime_content_type($file_tmp) ?: 'application/octet-stream';
-
-        $upload_dir = __DIR__ . '/../uploads';
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0755, true);
-        }
-
-        if (!is_writable($upload_dir)) {
-            sendJsonResponse(['error' => 'Upload directory not writable'], 500);
-        }
-
-        $new_file_name = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file_name);
-        $destination = $upload_dir . '/' . $new_file_name;
-
-        if (!move_uploaded_file($file_tmp, $destination)) {
-            sendJsonResponse(['error' => 'Failed to move uploaded file'], 500);
-        }
-
-        $event_date = $_POST['event_date'] ?? null;
-
-        $insert = $pdo->prepare("
-            INSERT INTO uploads (file_name, file_path, file_type, uploaded_by, event_date, uploaded_at, status)
-            VALUES (?, ?, ?, ?, ?, NOW(), 'pending')
-        ");
-
-        $insert->execute([
-            $file_name,
-            $destination,
-            $file_type,
-            $_SESSION['id'],
-            $event_date
-        ]);
-
-        $upload_id = $pdo->lastInsertId();
-        sendJsonResponse([
-            'success' => true,
-            'message' => 'File uploaded successfully',
-            'upload_id' => $upload_id
-        ]);
     }
 
     else {

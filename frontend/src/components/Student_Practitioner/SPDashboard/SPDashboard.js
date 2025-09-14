@@ -614,51 +614,105 @@ const renderDashboardContent = (analyticsData, getStatusBadge, formatCurrency) =
 
     {/* Top Budget Allocations */}
     <Box sx={{ mt: 5 }}>
-      <Typography variant="h6" gutterBottom>
+      <Typography variant="h6" gutterBottom fontWeight="600">
         Top Budget Allocations
       </Typography>
-      <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
-        {analyticsData.budgets.topBudgets.length > 0 ? (
-          <Table size="small">
-            <TableHead sx={{ bgcolor: "grey.100" }}>
-              <TableRow>
-                <TableCell>Budget Name</TableCell>
-                <TableCell>Amount</TableCell>
-                {/* <TableCell>File Name</TableCell> */}
-                <TableCell>Event Date</TableCell>
-                <TableCell>Comments</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {analyticsData.budgets.topBudgets.map((budget, index) => (
-                <TableRow key={index} hover>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="medium">
-                      {budget.budgetName}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="warning.main" fontWeight="bold">
-                      {formatCurrency(budget.amount)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{budget.fileName}</TableCell>
-                  <TableCell>{budget.eventDate || "N/A"}</TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ maxWidth: 200 }}>
-                      {budget.comments || "No comments"}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <Box sx={{ p: 3, textAlign: "center", color: "text.secondary" }}>
-            <Typography>No budget data found</Typography>
+
+      {analyticsData.budgets.topBudgets.length > 0 ? (
+        <Paper
+          elevation={2}
+          sx={{
+            borderRadius: 2,
+            overflow: "hidden",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          }}
+        >
+          {/* Table Header */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "1.5fr 1fr 1fr 1.5fr",
+              gap: 1,
+              padding: "12px 16px",
+              backgroundColor: "primary.main",
+              color: "white",
+              fontWeight: "bold",
+              borderBottom: "2px solid #dee2e6",
+            }}
+          >
+            <Box>Budget Name</Box>
+            <Box sx={{ textAlign: "right" }}>Amount</Box>
+            <Box sx={{ textAlign: "center" }}>Event Date</Box>
+            <Box>Comments</Box>
           </Box>
-        )}
-      </TableContainer>
+
+          {/* Table Rows */}
+          {analyticsData.budgets.topBudgets.map((budget, index) => (
+            <Box
+              key={index}
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "1.5fr 1fr 1fr 1.5fr",
+                gap: 1,
+                padding: "12px 16px",
+                alignItems: "center",
+                borderBottom: "1px solid #e9ecef",
+                backgroundColor: index % 2 === 0 ? "white" : "grey.50",
+                "&:hover": { backgroundColor: "action.hover" },
+                "&:last-child": { borderBottom: "none" },
+              }}
+            >
+              {/* Budget Name */}
+              <Box sx={{ fontWeight: "500", fontSize: "0.95rem" }}>
+                {budget.budgetName || "Unnamed Budget"}
+              </Box>
+
+              {/* Amount - Right aligned */}
+              <Box sx={{ textAlign: "right" }}>
+                <Typography variant="body2" color="warning.main" fontWeight="600">
+                  {formatCurrency(budget.amount)}
+                </Typography>
+              </Box>
+
+              {/* Event Date - Center aligned */}
+              <Box sx={{ textAlign: "center" }}>
+                <Typography variant="body2">
+                  {budget.eventDate ? new Date(budget.eventDate).toLocaleDateString() : "N/A"}
+                </Typography>
+              </Box>
+
+              {/* Comments */}
+              <Box>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontStyle: budget.comments ? "normal" : "italic",
+                    color: budget.comments ? "text.primary" : "text.secondary",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {budget.comments || "No comments"}
+                </Typography>
+              </Box>
+            </Box>
+          ))}
+        </Paper>
+      ) : (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            textAlign: "center",
+            color: "text.secondary",
+            backgroundColor: "grey.50",
+            borderRadius: 2,
+          }}
+        >
+          <Typography variant="body2">No budget data found</Typography>
+        </Paper>
+      )}
     </Box>
 
     {/* Recent Uploads Table */}

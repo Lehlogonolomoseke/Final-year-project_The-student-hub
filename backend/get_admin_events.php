@@ -56,7 +56,7 @@ try {
     
     $society_id = $society_result['society_id'];
     
-    // Query events for this society
+    // Query events for this society - INCLUDE upload_id
     $sql = "
         SELECT 
             e.event_id,
@@ -72,6 +72,7 @@ try {
             e.is_private,
             e.notices,
             e.attendance_code,
+            e.upload_id,
             e.created_at,
             e.created_by
         FROM events e
@@ -143,6 +144,7 @@ try {
             'is_private' => $row['is_private'] ?? 0,
             'notices' => $row['notices'] ?? '',
             'attendance_code' => $row['attendance_code'] ?? '',
+            'upload_id' => $row['upload_id'], // Include this for debugging
             'created_at' => $row['created_at'],
             'created_by' => $row['created_by'],
             'rsvp_counts' => $rsvpCount,

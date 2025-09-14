@@ -48,6 +48,7 @@ import JoinSocieties from "components/Student/Communities/JoinSociety";
 import Register from "components/Student/Register";
 import AttendancePage from "components/Student/Communities/Attendance";
 import UserProfile from "components/Student/Communities/Profile";
+import SAnnouncement from "components/Student/Communities/Student_Announcement";
 
 import AdminLayout from "components/Admin/AdminLayout/AdminLayout";
 import AdminSendFile from "components/Admin/Pages/admin_Send_File";
@@ -64,7 +65,9 @@ import Event_proposal from "components/Admin/Pages/Event_proposal";
 import EventPage from "components/Admin/Pages/EventRsvp";
 import AdminEvent from "components/Admin/Pages/Admin_Events";
 import ChangePassword from "components/ChangePassword";
-
+import Reports from "components/Admin/Pages/Generate_Reports";
+import Announcement from "components/Admin/Pages/Announcement";
+import Qrcode from "components/Admin/Pages/qr_code";
 // SP Components
 import SPLayout from "components/Student_Practitioner/SPLayout/SPLayout";
 import SPDashboard from "components/Student_Practitioner/SPDashboard/SPDashboard";
@@ -73,6 +76,7 @@ import Create_Society from "components/Student_Practitioner/Pages/Create_Society
 import CalenderP from "components/Student_Practitioner/Pages/Calender";
 import Response from "components/Student_Practitioner/Pages/response";
 import MoreInfo from "components/Student_Practitioner/Pages/MoreInfo";
+import View_reports from "components/Student_Practitioner/Pages/Reports";
 
 export default function App() {
   const [controller, dispatch] = useMaterialUIController();
@@ -156,8 +160,9 @@ export default function App() {
         <Route path="/student/communities" element={<BrowseCommunities />} />
         <Route path="/student/communities/dayhouses" element={<Dayhouses />} />
         <Route path="/dayhouse-page/:id" element={<JoinDayhouse />} />
-        <Route path="/attendance" element={<AttendancePage />} /> {/* Added attendance route */}
+        <Route path="/attendance" element={<AttendancePage />} />
         <Route path="/UserProfile" element={<UserProfile />} />
+        <Route path="/SAnnouncement" element={<SAnnouncement />} />
         <Route
           path="/society/:id"
           element={
@@ -192,6 +197,9 @@ export default function App() {
           <Route path="events" element={<Events />} />
           <Route path="event-creation" element={<Event_proposal />} />
           <Route path="admin-event" element={<AdminEvent />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="announcement" element={<Announcement />} />
+          <Route path="qrcode" element={<Qrcode />} />
         </Route>
         <Route
           path="/student/event"
@@ -216,6 +224,7 @@ export default function App() {
           <Route path="calendar" element={<CalenderP />} />
           <Route path="response/:fileId" element={<Response />} />
           <Route path="info/:uploadId" element={<MoreInfo />} />
+          <Route path="view_reports" element={<View_reports />} />
         </Route>
         {/* Default redirect */}
         <Route path="/" element={<Navigate to="/login" />} />

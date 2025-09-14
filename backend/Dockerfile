@@ -1,6 +1,6 @@
 FROM php:8.1-apache
 
-# Install system packages and PHP extensions for MySQL and PostgreSQL
+# Install system packages and PHP extensions
 RUN apt-get update && \
     apt-get install -y \
         libpq-dev \
@@ -8,7 +8,13 @@ RUN apt-get update && \
         libjpeg-dev \
         libfreetype6-dev \
         libzip-dev \
+        libxml2-dev \
+        libonig-dev \
         postgresql-client \
+        git \
+        curl \
+        zip \
+        unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
         mysqli \
@@ -18,16 +24,28 @@ RUN apt-get update && \
         pdo_pgsql \
         gd \
         zip \
+        mbstring \
+        xml \
+        bcmath \
     && rm -rf /var/lib/apt/lists/*
 
 # Verify PostgreSQL extensions are installed
 RUN php -m | grep -E "(pgsql|pdo_pgsql)" || (echo "PostgreSQL extensions not found!" && exit 1)
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
 # Set working directory
 WORKDIR /var/www/html
+
+# Copy composer.json first (for better Docker layer caching)
+COPY composer.json composer.lock* ./
+
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Copy all PHP files from host to container
 COPY . .

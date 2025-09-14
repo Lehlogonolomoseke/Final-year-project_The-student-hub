@@ -22,5 +22,5 @@ function getSupabaseConnection() {
 function getDatabaseConnection() {
     return getSupabaseConnection();
 }
-?>
+
 
