@@ -1,16 +1,14 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import ujLogo from "../../../assets/images/logo.png";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 import {
   FaTachometerAlt,
-  FaFileUpload,
-  FaCalendarPlus,
   FaIdCard,
   FaHouseUser,
   FaUsers,
-  FaCalendarAlt,
+  FaMapMarkedAlt,
   FaUserFriends,
-  FaRegCalendarCheck,
   FaClipboardList,
   FaSignOutAlt,
 } from "react-icons/fa";
@@ -27,16 +25,14 @@ const AdminSidebar = () => {
 
   const links = [
     { to: "/admin", icon: FaTachometerAlt, label: "Dashboard" },
-    { to: "/admin/send-file", icon: FaFileUpload, label: "Events Calendar" },
-    { to: "/admin/create-event", icon: FaCalendarPlus, label: "Create Event" },
     { to: "/admin/create-profile", icon: FaIdCard, label: "Create Society Profile" },
     { to: "/admin/create-dayhouse-profile", icon: FaHouseUser, label: "Create Dayhouse Profile" },
     { to: "/admin/dayhouse-members", icon: FaUsers, label: "Dayhouse Members" },
-    { to: "/admin/events", icon: FaClipboardList, label: "Events" },
+    { to: "/admin/events-hub", icon: FaClipboardList, label: "Events Hub" }, // New grouped page
     { to: "/admin/members", icon: FaUserFriends, label: "Members Management" },
-    { to: "/admin/upcoming-events", icon: FaRegCalendarCheck, label: "Upcoming Events" },
-    { to: "/admin/event-creation", icon: FaCalendarAlt, label: "Event Proposal" },
-    { to: "/admin/admin-event", icon: FaClipboardList, label: "Admin Events" },
+    { to: "/admin/qrcode", icon: AssignmentIcon, label: "Generate qrCode" },
+    { to: "/admin/reports", icon: FaMapMarkedAlt, label: "Reports" },
+    { to: "/admin/announcement", icon: FaMapMarkedAlt, label: "Create an Announcement" },
   ];
 
   return (

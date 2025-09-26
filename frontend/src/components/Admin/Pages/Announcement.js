@@ -7,7 +7,6 @@ function Announcement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
 
-  // Real authentication state - will be populated from API
   const [currentUser, setCurrentUser] = useState({
     isLoggedIn: false,
     id: null,
@@ -15,7 +14,6 @@ function Announcement() {
     community: null,
   });
 
-  // Form state
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -27,11 +25,21 @@ function Announcement() {
   const [formLoading, setFormLoading] = useState(false);
   const [formErrors, setFormErrors] = useState([]);
 
+  const announcementTypes = [
+    "General Info",
+    "Event",
+    "Maintenance",
+    "Emergency",
+    "Academic",
+    "Social",
+  ];
+
+  // Fetch announcements whenever search/filter changes
   useEffect(() => {
     fetchAnnouncements();
   }, [searchTerm, typeFilter]);
 
-  // Auto-fill form when user community is known
+  // Auto-fill community info in form
   useEffect(() => {
     if (currentUser.community) {
       setFormData((prev) => ({
@@ -54,13 +62,7 @@ function Announcement() {
       });
 
       if (response.status === 401) {
-        // User is not authenticated
-        setCurrentUser({
-          isLoggedIn: false,
-          id: null,
-          role: null,
-          community: null,
-        });
+        setCurrentUser({ isLoggedIn: false, id: null, role: null, community: null });
         return;
       }
 
@@ -68,8 +70,6 @@ function Announcement() {
 
       if (result.success) {
         setAnnouncements(result.announcements || []);
-
-        // Set user information from the API response
         if (result.user) {
           setCurrentUser({
             isLoggedIn: true,
@@ -78,32 +78,25 @@ function Announcement() {
             community: result.user.community,
           });
         } else {
-          setCurrentUser({
-            isLoggedIn: true,
-            id: null,
-            role: "USER",
-            community: null,
-          });
+          setCurrentUser({ isLoggedIn: true, id: null, role: "USER", community: null });
         }
       } else {
-        setCurrentUser({
-          isLoggedIn: false,
-          id: null,
-          role: null,
-          community: null,
-        });
+        setCurrentUser({ isLoggedIn: false, id: null, role: null, community: null });
       }
     } catch (error) {
       console.error("Error fetching announcements:", error);
-      setCurrentUser({
-        isLoggedIn: false,
-        id: null,
-        role: null,
-        community: null,
-      });
+      setCurrentUser({ isLoggedIn: false, id: null, role: null, community: null });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleCreateAnnouncement = async () => {
@@ -114,9 +107,7 @@ function Announcement() {
       const response = await fetch("http://localhost:8000/create_announcement.php", {
         method: "POST",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
@@ -124,7 +115,6 @@ function Announcement() {
 
       if (result.success) {
         setShowCreateForm(false);
-        // Reset form but keep community info
         setFormData({
           title: "",
           content: "",
@@ -145,14 +135,6 @@ function Announcement() {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -163,49 +145,34 @@ function Announcement() {
     });
   };
 
-  const announcementTypes = [
-    "General Info",
-    "Event",
-    "Maintenance",
-    "Emergency",
-    "Academic",
-    "Social",
-  ];
-
-  // Show login message if not authenticated
   if (!currentUser.isLoggedIn) {
     return (
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="text-center py-12">
-          <div className="text-4xl mb-4">🔒</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
-          <p className="text-gray-600 mb-4">
-            You need to be logged in to view and create announcements.
-          </p>
-          <p className="text-sm text-gray-500">
-            Please log in with your admin or dayhouse manager account.
-          </p>
-        </div>
+      <div className="max-w-6xl mx-auto p-6 text-center">
+        <div className="text-4xl mb-4">🔒</div>
+        <h2 className="text-2xl font-bold mb-2 text-gray-900">Authentication Required</h2>
+        <p className="text-gray-600 mb-2">You need to be logged in to view announcements.</p>
+        <p className="text-sm text-gray-500">Log in with your admin or manager account.</p>
       </div>
     );
   }
 
   return (
     <div className="max-w-6xl mx-auto p-6">
+      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">📢 Announcements</h1>
         <p className="text-gray-600">Create and manage announcements for your communities</p>
-        <div className="flex items-center gap-4 mt-2">
-          <p className="text-sm text-blue-600">Role: {currentUser.role}</p>
+        <div className="flex items-center gap-4 mt-2 text-sm">
+          <span className="text-blue-600">Role: {currentUser.role}</span>
           {currentUser.community && (
-            <p className="text-sm text-green-600">
+            <span className="text-green-600">
               {currentUser.community.type === "society" ? "🎓" : "🏠"} {currentUser.community.name}
-            </p>
+            </span>
           )}
         </div>
       </div>
 
-      {/* Header Actions */}
+      {/* Filters and Create Button */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex gap-4 flex-1">
           <div className="relative flex-1 max-w-md">
@@ -220,7 +187,6 @@ function Announcement() {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
@@ -234,8 +200,6 @@ function Announcement() {
             ))}
           </select>
         </div>
-
-        {/* Show create button only if user has a community to post to */}
         {currentUser.community && (
           <button
             onClick={() => setShowCreateForm(true)}
@@ -245,19 +209,6 @@ function Announcement() {
           </button>
         )}
       </div>
-
-      {/* Show message if user has no community */}
-      {!currentUser.community && currentUser.isLoggedIn && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center">
-            <span className="text-yellow-600 text-xl mr-2">⚠️</span>
-            <p className="text-yellow-800">
-              You do not have permission to manage any communities. Contact an administrator if you
-              believe this is an error.
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Create Form Modal */}
       {showCreateForm && (
@@ -285,7 +236,6 @@ function Announcement() {
             )}
 
             <div className="space-y-4">
-              {/* Community Display - Read Only */}
               {currentUser.community && (
                 <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
                   <p className="text-sm font-medium text-blue-700">Posting to:</p>
@@ -407,11 +357,8 @@ function Announcement() {
                       {announcement.announcement_type}
                     </span>
                   </div>
-
                   <p className="text-gray-600 text-sm mb-2">🏛️ {announcement.community_name}</p>
-
                   <p className="text-gray-700 mb-3">{announcement.content}</p>
-
                   <p className="text-sm text-gray-500">🕐 {formatDate(announcement.created_at)}</p>
                 </div>
               </div>

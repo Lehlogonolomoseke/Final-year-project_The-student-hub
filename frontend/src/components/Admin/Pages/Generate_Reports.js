@@ -18,26 +18,18 @@ export default function Reports() {
   const [message, setMessage] = useState(null);
   const [eventCosts, setEventCosts] = useState([]);
   const [actualSpending, setActualSpending] = useState({});
-
-  // Send functionality
   const [showSendModal, setShowSendModal] = useState(false);
   const [sendMessage, setSendMessage] = useState("");
 
-  // Fetch events (for dropdown)
   useEffect(() => {
     fetch("http://localhost:8000/get_admin_events.php", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
-        if (data.success) {
-          setEvents(data.events);
-        } else {
-          console.error("Failed to fetch events:", data.error);
-        }
+        if (data.success) setEvents(data.events);
       })
       .catch((err) => console.error("Error fetching events:", err));
   }, []);
 
-  // Fetch event costs and details when an event is selected
   useEffect(() => {
     if (formData.event_id) {
       fetchEventCosts(formData.event_id);
@@ -60,44 +52,35 @@ export default function Reports() {
         }
       );
       const data = await response.json();
-
       if (data.success) {
         setEventCosts(data.costs || []);
-        const initialActualSpending = {};
+        const initialActual = {};
         data.costs.forEach((cost) => {
-          initialActualSpending[cost.id] = cost.budget || 0;
+          initialActual[cost.id] = cost.budget || 0;
         });
-        setActualSpending(initialActualSpending);
+        setActualSpending(initialActual);
       } else {
-        console.error("Failed to fetch event costs:", data.error);
         setEventCosts([]);
         setActualSpending({});
         setMessage({ type: "error", text: data.error || "Failed to fetch event costs" });
       }
     } catch (error) {
-      console.error("Error fetching event costs:", error);
       setEventCosts([]);
       setActualSpending({});
       setMessage({ type: "error", text: "Network error while fetching event costs" });
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  const handleChange = (e) => setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleActualSpendingChange = (costId, value) => {
-    setActualSpending((prev) => ({
-      ...prev,
-      [costId]: parseFloat(value) || 0,
-    }));
+    setActualSpending((prev) => ({ ...prev, [costId]: parseFloat(value) || 0 }));
   };
 
   const calculateTotals = () => {
     const totalBudgeted = eventCosts.reduce((sum, cost) => sum + (parseFloat(cost.budget) || 0), 0);
     const totalActual = Object.values(actualSpending).reduce(
-      (sum, amount) => sum + (parseFloat(amount) || 0),
+      (sum, amt) => sum + (parseFloat(amt) || 0),
       0
     );
     return { totalBudgeted, totalActual };
@@ -126,14 +109,13 @@ export default function Reports() {
       });
 
       const data = await res.json();
-      if (data.success) {
-        setReport(data);
-        setMessage({ type: "success", text: "Report saved successfully!" });
-      } else {
-        setMessage({ type: "error", text: data.error || "Failed to save report." });
-      }
+      setMessage(
+        data.success
+          ? { type: "success", text: "Report saved successfully!" }
+          : { type: "error", text: data.error || "Failed to save report." }
+      );
+      if (data.success) setReport(data);
     } catch (err) {
-      console.error("Network error:", err);
       setMessage({ type: "error", text: "Network error while saving report." });
     } finally {
       setLoading(false);
@@ -145,7 +127,6 @@ export default function Reports() {
       setMessage({ type: "error", text: "Please select an event first." });
       return;
     }
-
     setPdfLoading(true);
     setMessage(null);
 
@@ -162,7 +143,7 @@ export default function Reports() {
         actual_spending: actualSpending,
         total_budgeted: totalBudgeted,
         total_actual: totalActual,
-        savings: savings,
+        savings,
       },
     };
 
@@ -174,52 +155,9 @@ export default function Reports() {
         body: JSON.stringify(reportData),
       });
 
-      const contentType = response.headers.get("content-type");
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        try {
-          const errorJson = JSON.parse(errorText);
-          setMessage({ type: "error", text: errorJson.error || "Failed to generate PDF." });
-        } catch {
-          setMessage({ type: "error", text: `Server error: ${errorText}` });
-        }
-        return;
-      }
-
-      if (!contentType || !contentType.includes("application/pdf")) {
-        const responseText = await response.text();
-        try {
-          const jsonResponse = JSON.parse(responseText);
-          setMessage({
-            type: "error",
-            text: jsonResponse.error || "Server returned unexpected response format.",
-          });
-        } catch {
-          setMessage({
-            type: "error",
-            text: "Server returned non-PDF response: " + responseText.substring(0, 200),
-          });
-        }
-        return;
-      }
+      if (!response.ok) throw new Error("Failed to generate PDF");
 
       const blob = await response.blob();
-
-      if (blob.size < 1000) {
-        const blobText = await blob.text();
-        try {
-          const jsonResponse = JSON.parse(blobText);
-          setMessage({ type: "error", text: jsonResponse.error || "PDF generation failed." });
-        } catch {
-          setMessage({
-            type: "error",
-            text: "Generated PDF is too small. Possible server error: " + blobText,
-          });
-        }
-        return;
-      }
-
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.style.display = "none";
@@ -231,23 +169,19 @@ export default function Reports() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-
-      setMessage({ type: "success", text: "PDF report generated and downloaded successfully!" });
+      setMessage({ type: "success", text: "PDF generated and downloaded successfully!" });
     } catch (err) {
-      console.error("Network error:", err);
-      setMessage({ type: "error", text: "Network error while generating PDF: " + err.message });
+      setMessage({ type: "error", text: "Error generating PDF: " + err.message });
     } finally {
       setPdfLoading(false);
     }
   };
 
-  // Generate and Send PDF to Student Practitioner
   const sendReportToStudent = async () => {
     if (!formData.event_id || !selectedEvent) {
       setMessage({ type: "error", text: "Please select an event first." });
       return;
     }
-
     setSendLoading(true);
     setMessage(null);
 
@@ -264,12 +198,11 @@ export default function Reports() {
         actual_spending: actualSpending,
         total_budgeted: totalBudgeted,
         total_actual: totalActual,
-        savings: savings,
+        savings,
       },
     };
 
     try {
-      // First generate the PDF
       const pdfResponse = await fetch("http://localhost:8000/generate_reports.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -277,53 +210,39 @@ export default function Reports() {
         body: JSON.stringify(reportData),
       });
 
-      if (!pdfResponse.ok) {
-        throw new Error("Failed to generate PDF for sending");
-      }
+      if (!pdfResponse.ok) throw new Error("Failed to generate PDF for sending");
 
       const pdfBlob = await pdfResponse.blob();
       const reader = new FileReader();
-
       reader.onload = async () => {
-        try {
-          const base64PDF = reader.result.split(",")[1]; // Remove data:application/pdf;base64, prefix
+        const base64PDF = reader.result.split(",")[1];
+        const sendResponse = await fetch("http://localhost:8000/send_report.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            event_name: selectedEvent.name,
+            event_date: selectedEvent.start_date,
+            pdf_data: base64PDF,
+            message: sendMessage,
+          }),
+        });
 
-          // Send the PDF to student practitioner
-          const sendResponse = await fetch("http://localhost:8000/send_report.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
-              event_name: selectedEvent.name,
-              event_date: selectedEvent.start_date,
-              pdf_data: base64PDF,
-              message: sendMessage,
-            }),
-          });
-
-          const sendData = await sendResponse.json();
-          if (sendData.success) {
-            setMessage({
-              type: "success",
-              text: "Report sent successfully to student practitioner!",
-            });
-            setShowSendModal(false);
-            setSendMessage("");
-          } else {
-            setMessage({ type: "error", text: sendData.message || "Failed to send report." });
-          }
-        } catch (err) {
-          console.error("Error sending report:", err);
-          setMessage({ type: "error", text: "Network error while sending report." });
-        } finally {
-          setSendLoading(false);
+        const sendData = await sendResponse.json();
+        setMessage(
+          sendData.success
+            ? { type: "success", text: "Report sent successfully!" }
+            : { type: "error", text: sendData.message || "Failed to send report." }
+        );
+        if (sendData.success) {
+          setShowSendModal(false);
+          setSendMessage("");
         }
       };
-
       reader.readAsDataURL(pdfBlob);
     } catch (err) {
-      console.error("Error:", err);
-      setMessage({ type: "error", text: "Failed to generate or send report: " + err.message });
+      setMessage({ type: "error", text: "Error sending report: " + err.message });
+    } finally {
       setSendLoading(false);
     }
   };
@@ -332,27 +251,28 @@ export default function Reports() {
   const savings = totalBudgeted - totalActual;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">📊 Event Report</h2>
+    <div className="p-6 max-w-6xl mx-auto">
+      <h2 className="text-3xl font-bold mb-6 text-gray-900">Event Report</h2>
 
       {message && (
         <div
-          className={`p-3 mb-4 rounded ${
-            message.type === "success" ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"
+          className={`p-4 mb-6 rounded-lg ${
+            message.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
           }`}
         >
           {message.text}
         </div>
       )}
 
-      <div className="space-y-4 bg-white shadow rounded-xl p-6">
+      <div className="space-y-6 bg-white shadow-lg rounded-xl p-6">
+        {/* Event Selection */}
         <div>
-          <label className="block font-semibold mb-1">📅 Select Event</label>
+          <label className="block font-semibold mb-2 text-gray-700">Select Event</label>
           <select
             name="event_id"
             value={formData.event_id}
             onChange={handleChange}
-            className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border-gray-300 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             required
           >
             <option value="">-- Select an event --</option>
@@ -364,14 +284,14 @@ export default function Reports() {
           </select>
         </div>
 
-        {/* Event Summary Section */}
+        {/* Event Summary */}
         {selectedEvent && (
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h3 className="text-lg font-semibold mb-3 text-blue-800">📋 Event Summary</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
+            <h3 className="text-xl font-semibold mb-4 text-gray-800">Event Summary</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700 text-sm">
+              <div className="space-y-1">
                 <p>
-                  <strong>Event Name:</strong> {selectedEvent.name}
+                  <strong>Name:</strong> {selectedEvent.name}
                 </p>
                 <p>
                   <strong>Date:</strong> {new Date(selectedEvent.start_date).toLocaleDateString()}
@@ -391,102 +311,94 @@ export default function Reports() {
                   </p>
                 )}
               </div>
-              <div>
-                <div className="space-y-2">
-                  <div className="bg-white p-2 rounded border">
-                    <p>
-                      <strong>👥 RSVP Summary:</strong>
+              <div className="space-y-3">
+                <div className="bg-white p-3 rounded border">
+                  <p>
+                    <strong>RSVP Summary:</strong>
+                  </p>
+                  <p className="text-green-600">
+                    Interested: {selectedEvent.rsvp_counts?.interested || 0}
+                  </p>
+                  <p className="text-red-600">
+                    Not Interested: {selectedEvent.rsvp_counts?.not_interested || 0}
+                  </p>
+                </div>
+                <div className="bg-white p-3 rounded border">
+                  <p>
+                    <strong>Attendance:</strong>
+                  </p>
+                  <p className="text-blue-600">Present: {selectedEvent.attendance_count || 0}</p>
+                  {selectedEvent.capacity && (
+                    <p className="text-gray-600">
+                      Rate:{" "}
+                      {((selectedEvent.attendance_count / selectedEvent.capacity) * 100).toFixed(1)}
+                      %
                     </p>
-                    <p className="text-green-600">
-                      ✓ Interested: {selectedEvent.rsvp_counts?.interested || 0}
-                    </p>
-                    <p className="text-red-600">
-                      ✗ Not Interested: {selectedEvent.rsvp_counts?.not_interested || 0}
-                    </p>
-                  </div>
-                  <div className="bg-white p-2 rounded border">
-                    <p>
-                      <strong>📊 Attendance:</strong>
-                    </p>
-                    <p className="text-blue-600">Present: {selectedEvent.attendance_count || 0}</p>
-                    {selectedEvent.capacity && (
-                      <p className="text-gray-600">
-                        Attendance Rate:{" "}
-                        {((selectedEvent.attendance_count / selectedEvent.capacity) * 100).toFixed(
-                          1
-                        )}
-                        %
-                      </p>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         )}
 
+        {/* Financial Details */}
         {formData.event_id && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-2">💸 Financial Details</h3>
+            <h3 className="text-lg font-semibold text-gray-800">Financial Details</h3>
             {eventCosts.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-                  <thead className="bg-gray-100">
+                <table className="min-w-full border border-gray-200 rounded-lg text-gray-700">
+                  <thead className="bg-gray-100 text-left text-sm font-semibold">
                     <tr>
-                      <th className="py-3 px-4 border-b text-left font-semibold">Cost Item</th>
-                      <th className="py-3 px-4 border-b text-right font-semibold">Budgeted (R)</th>
-                      <th className="py-3 px-4 border-b text-right font-semibold">
-                        Actual Spent (R)
-                      </th>
-                      <th className="py-3 px-4 border-b text-right font-semibold">Difference</th>
+                      <th className="px-4 py-3 border-b">Cost Item</th>
+                      <th className="px-4 py-3 border-b text-right">Budgeted (R)</th>
+                      <th className="px-4 py-3 border-b text-right">Actual Spent (R)</th>
+                      <th className="px-4 py-3 border-b text-right">Difference</th>
                     </tr>
                   </thead>
                   <tbody>
                     {eventCosts.map((cost) => {
                       const budgeted = parseFloat(cost.budget) || 0;
                       const actual = parseFloat(actualSpending[cost.id]) || 0;
-                      const difference = budgeted - actual;
-
+                      const diff = budgeted - actual;
                       return (
                         <tr key={cost.id} className="hover:bg-gray-50">
-                          <td className="py-3 px-4 border-b">
-                            <div>
-                              <div className="font-medium">{cost.name}</div>
-                              {cost.comments && (
-                                <div className="text-sm text-gray-500">{cost.comments}</div>
-                              )}
-                            </div>
+                          <td className="px-4 py-3 border-b">
+                            <div className="font-medium">{cost.name}</div>
+                            {cost.comments && (
+                              <div className="text-sm text-gray-500">{cost.comments}</div>
+                            )}
                           </td>
-                          <td className="py-3 px-4 border-b text-right">R{budgeted.toFixed(2)}</td>
-                          <td className="py-3 px-4 border-b text-right">
+                          <td className="px-4 py-3 border-b text-right">R{budgeted.toFixed(2)}</td>
+                          <td className="px-4 py-3 border-b text-right">
                             <input
                               type="number"
                               step="0.01"
                               min="0"
                               value={actualSpending[cost.id] || 0}
                               onChange={(e) => handleActualSpendingChange(cost.id, e.target.value)}
-                              className="w-28 px-2 py-1 border rounded text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-24 px-2 py-1 border rounded text-right focus:outline-none focus:ring-2 focus:ring-indigo-500"
                               placeholder="0.00"
                             />
                           </td>
                           <td
-                            className={`py-3 px-4 border-b text-right font-medium ${
-                              difference >= 0 ? "text-green-600" : "text-red-600"
+                            className={`px-4 py-3 border-b text-right font-semibold ${
+                              diff >= 0 ? "text-green-600" : "text-red-600"
                             }`}
                           >
-                            {difference >= 0 ? "+" : ""}R{difference.toFixed(2)}
+                            {diff >= 0 ? "+" : ""}R{diff.toFixed(2)}
                           </td>
                         </tr>
                       );
                     })}
                   </tbody>
-                  <tfoot className="bg-gray-50">
-                    <tr className="font-semibold">
-                      <td className="py-3 px-4 border-t">TOTALS</td>
-                      <td className="py-3 px-4 border-t text-right">R{totalBudgeted.toFixed(2)}</td>
-                      <td className="py-3 px-4 border-t text-right">R{totalActual.toFixed(2)}</td>
+                  <tfoot className="bg-gray-50 font-semibold">
+                    <tr>
+                      <td className="px-4 py-3 border-t">TOTALS</td>
+                      <td className="px-4 py-3 border-t text-right">R{totalBudgeted.toFixed(2)}</td>
+                      <td className="px-4 py-3 border-t text-right">R{totalActual.toFixed(2)}</td>
                       <td
-                        className={`py-3 px-4 border-t text-right ${
+                        className={`px-4 py-3 border-t text-right ${
                           savings >= 0 ? "text-green-600" : "text-red-600"
                         }`}
                       >
@@ -497,40 +409,34 @@ export default function Reports() {
                 </table>
               </div>
             ) : (
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-yellow-800">
-                  ⚠️ No budget items found for this event. You can still generate a report with
-                  event details and feedback.
-                </p>
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm">
+                No budget items found for this event. You can still generate a report with event
+                details and feedback.
               </div>
             )}
 
             {eventCosts.length > 0 && (
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">
-                      R{totalBudgeted.toFixed(2)}
-                    </div>
-                    <div className="text-sm text-gray-600">💰 Total Budgeted</div>
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-xl font-bold text-indigo-600">
+                    R{totalBudgeted.toFixed(2)}
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">
-                      R{totalActual.toFixed(2)}
-                    </div>
-                    <div className="text-sm text-gray-600">💵 Total Actual</div>
+                  <div className="text-gray-600 text-sm">Total Budgeted</div>
+                </div>
+                <div>
+                  <div className="text-xl font-bold text-orange-600">R{totalActual.toFixed(2)}</div>
+                  <div className="text-gray-600 text-sm">Total Actual</div>
+                </div>
+                <div>
+                  <div
+                    className={`text-xl font-bold ${
+                      savings >= 0 ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {savings >= 0 ? "+" : ""}R{savings.toFixed(2)}
                   </div>
-                  <div className="text-center">
-                    <div
-                      className={`text-2xl font-bold ${
-                        savings >= 0 ? "text-green-600" : "text-red-600"
-                      }`}
-                    >
-                      {savings >= 0 ? "+" : ""}R{savings.toFixed(2)}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      📊 {savings >= 0 ? "Savings" : "Overspent"}
-                    </div>
+                  <div className="text-gray-600 text-sm">
+                    {savings >= 0 ? "Savings" : "Overspent"}
                   </div>
                 </div>
               </div>
@@ -538,27 +444,28 @@ export default function Reports() {
           </div>
         )}
 
+        {/* Feedback */}
         <div>
-          <label className="block font-semibold mb-1">📝 General Feedback</label>
+          <label className="block font-semibold mb-2 text-gray-700">General Feedback</label>
           <textarea
             name="general_feedback"
             value={formData.general_feedback}
             onChange={handleChange}
             rows="4"
-            className="w-full border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter your feedback about the event, including what went well, challenges faced, and recommendations for future events..."
+            className="w-full border-gray-300 border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            placeholder="Enter your feedback about the event, including what went well, challenges, and recommendations."
             required
           />
         </div>
 
         <div>
-          <label className="block font-semibold mb-1">📆 Report Date</label>
+          <label className="block font-semibold mb-2 text-gray-700">Report Date</label>
           <input
             type="date"
             name="report_date"
             value={formData.report_date}
             onChange={handleChange}
-            className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border-gray-300 border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
@@ -567,134 +474,56 @@ export default function Reports() {
           <button
             onClick={handleSubmit}
             disabled={loading || !formData.event_id}
-            className="bg-blue-600 text-white px-4 py-3 rounded font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50"
           >
-            {loading ? "💾 Saving Report..." : "💾 Save Event Report"}
+            {loading ? "Saving Report..." : "Save Event Report"}
           </button>
 
           <button
             onClick={generatePDF}
             disabled={pdfLoading || !formData.event_id || !formData.general_feedback.trim()}
-            className="bg-red-600 text-white px-4 py-3 rounded font-semibold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50"
           >
-            {pdfLoading ? "📄 Generating PDF..." : "📄 Generate PDF Report"}
+            {pdfLoading ? "Generating PDF..." : "Generate PDF Report"}
           </button>
 
           <button
             onClick={() => setShowSendModal(true)}
-            disabled={!formData.event_id || !selectedEvent || !formData.general_feedback.trim()}
-            className="bg-green-600 text-white px-4 py-3 rounded font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled={sendLoading || !formData.event_id || !formData.general_feedback.trim()}
+            className="bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50"
           >
-            📧 Send to Student Practitioner
+            {sendLoading ? "Sending Report..." : "Send Report to Students"}
           </button>
         </div>
-
-        {!formData.general_feedback.trim() && formData.event_id && (
-          <p className="text-sm text-gray-500 text-center">
-            💡 Please add general feedback before generating PDF or sending report
-          </p>
-        )}
       </div>
 
       {/* Send Report Modal */}
       {showSendModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">📧 Send Report to Student Practitioner</h3>
-
-            <div className="space-y-4">
-              <div className="bg-blue-50 p-3 rounded text-sm">
-                <p>
-                  <strong>Event:</strong> {selectedEvent?.name}
-                </p>
-                <p>
-                  <strong>Date:</strong>{" "}
-                  {selectedEvent && new Date(selectedEvent.start_date).toLocaleDateString()}
-                </p>
-                <p>
-                  <strong>Financial Summary:</strong> R{totalBudgeted.toFixed(2)} budgeted, R
-                  {totalActual.toFixed(2)} actual
-                </p>
-              </div>
-
-              <div>
-                <label className="block font-semibold mb-1">💬 Message (Optional)</label>
-                <textarea
-                  value={sendMessage}
-                  onChange={(e) => setSendMessage(e.target.value)}
-                  rows="3"
-                  className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Add any additional notes or instructions..."
-                />
-              </div>
-
-              <div className="bg-yellow-50 p-3 rounded border border-yellow-200 text-sm text-yellow-800">
-                ℹ️ This will generate a PDF report and send it to the student practitioner for
-                review.
-              </div>
-            </div>
-
-            <div className="flex gap-2 mt-6">
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
+            <h3 className="text-xl font-semibold mb-4 text-gray-800">Send Report to Students</h3>
+            <textarea
+              value={sendMessage}
+              onChange={(e) => setSendMessage(e.target.value)}
+              rows="4"
+              className="w-full border-gray-300 border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4"
+              placeholder="Optional message to students..."
+            />
+            <div className="flex justify-end gap-3">
               <button
-                onClick={sendReportToStudent}
-                disabled={sendLoading}
-                className="flex-1 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
-              >
-                {sendLoading ? "📧 Sending..." : "📧 Send Report"}
-              </button>
-              <button
-                onClick={() => {
-                  setShowSendModal(false);
-                  setSendMessage("");
-                }}
-                className="px-4 py-2 border rounded hover:bg-gray-50"
+                onClick={() => setShowSendModal(false)}
+                className="px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-400"
               >
                 Cancel
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {report && (
-        <div className="mt-6 p-6 bg-gray-100 rounded-xl shadow">
-          <h3 className="text-xl font-semibold mb-4">📑 Report Summary</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p>
-                <strong>Report ID:</strong> {report.report_id}
-              </p>
-              <p>
-                <strong>Event ID:</strong> {formData.event_id}
-              </p>
-              <p>
-                <strong>Report Date:</strong> {formData.report_date}
-              </p>
-            </div>
-            <div>
-              <p>
-                <strong>💰 Total Budgeted:</strong> R{report.financial_summary.total_budgeted}
-              </p>
-              <p>
-                <strong>💵 Total Actual:</strong> R{report.financial_summary.total_actual}
-              </p>
-              <p
-                className={`font-semibold ${
-                  report.financial_summary.savings >= 0 ? "text-green-600" : "text-red-600"
-                }`}
+              <button
+                onClick={sendReportToStudent}
+                disabled={sendLoading}
+                className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
               >
-                <strong>
-                  📊 {report.financial_summary.savings >= 0 ? "Savings" : "Overspent"}:
-                </strong>{" "}
-                R{report.financial_summary.savings}
-              </p>
+                {sendLoading ? "Sending..." : "Send Report"}
+              </button>
             </div>
-          </div>
-          <div className="mt-4">
-            <p>
-              <strong>Feedback:</strong>
-            </p>
-            <p className="bg-white p-3 rounded border italic">{formData.general_feedback}</p>
           </div>
         </div>
       )}

@@ -68,6 +68,7 @@ import ChangePassword from "components/ChangePassword";
 import Reports from "components/Admin/Pages/Generate_Reports";
 import Announcement from "components/Admin/Pages/Announcement";
 import Qrcode from "components/Admin/Pages/qr_code";
+import EventsHub from "components/Admin/Pages/EventsHub";
 // SP Components
 import SPLayout from "components/Student_Practitioner/SPLayout/SPLayout";
 import SPDashboard from "components/Student_Practitioner/SPDashboard/SPDashboard";
@@ -200,7 +201,9 @@ export default function App() {
           <Route path="reports" element={<Reports />} />
           <Route path="announcement" element={<Announcement />} />
           <Route path="qrcode" element={<Qrcode />} />
+          <Route path="events-hub" element={<EventsHub />} />
         </Route>
+
         <Route
           path="/student/event"
           element={

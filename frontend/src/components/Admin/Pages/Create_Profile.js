@@ -1,42 +1,43 @@
 import React, { useState } from "react";
+import axios from "axios";
 import {
+  Box,
   Typography,
   TextField,
   Select,
   MenuItem,
-  FormControl,
   InputLabel,
+  FormControl,
   Button,
   Alert,
   CircularProgress,
-  Stack,
-  Paper,
-  Box,
 } from "@mui/material";
-import axios from "axios";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
 function CreateProfile() {
-  const [profileInfo, setProfileInfo] = useState({
+  const [profileInfo, setInfo] = useState({
     name: "",
     description: "",
     category: "",
+    image: null,
   });
-  const [image, setImage] = useState(null);
+
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
 
-  const categories = [
-    { value: "Academic", label: "Academic" },
-    { value: "Religious", label: "Religious" },
-    { value: "Social", label: "Social" },
-    { value: "Political", label: "Political" },
-    { value: "Other", label: "Other" },
-  ];
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setProfileInfo((prev) => ({ ...prev, [name]: value }));
+    setInfo((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setInfo((prev) => ({
+      ...prev,
+      image: file,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -44,155 +45,181 @@ function CreateProfile() {
     setMsg(null);
     setLoading(true);
 
-    if (!image) {
-      setMsg({ type: "error", text: "Please upload a society logo." });
-      setLoading(false);
-      return;
-    }
-
     try {
       const formData = new FormData();
-      for (const key in profileInfo) {
-        formData.append(key, profileInfo[key]);
+      formData.append("name", profileInfo.name);
+      formData.append("description", profileInfo.description);
+      formData.append("category", profileInfo.category);
+      if (profileInfo.image) {
+        formData.append("image", profileInfo.image);
       }
-      formData.append("image", image);
 
       const res = await axios.post(
-        "http://localhost/student-hub/backend/Create-Profile.php",
+        `http://localhost:8000/Create-Profile.php`, // Updated to match your port
         formData,
         {
-          headers: { "Content-Type": "multipart/form-data" },
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
           withCredentials: true,
         }
       );
 
+      // Check if response indicates success
       if (res.data.success) {
-        setMsg({ type: "success", text: "Profile Created Successfully." });
-        setProfileInfo({ name: "", description: "", category: "" });
-        setImage(null);
+        setMsg({ type: "success", text: res.data.message || "Profile Updated Successfully." });
+        setInfo({ name: "", description: "", category: "", image: null });
+
+        // Reset file input
+        const fileInput = document.getElementById("image");
+        if (fileInput) {
+          fileInput.value = "";
+        }
       } else {
-        setMsg({ type: "error", text: res.data.error || "Error: Profile not created." });
+        throw new Error(res.data.message || "Unknown error occurred");
       }
     } catch (err) {
-      console.error("Submission error:", err);
-      setMsg({ type: "error", text: "Network error or server issue. Profile not created." });
+      console.error("Profile creation error:", err);
+
+      let errorMessage = "Error: Profile not updated.";
+
+      if (err.response?.data) {
+        if (err.response.data.errors) {
+          // Handle validation errors
+          const errors = err.response.data.errors;
+          const errorMessages = Object.values(errors).join(", ");
+          errorMessage = `Error: ${errorMessages}`;
+        } else if (err.response.data.error) {
+          errorMessage = `Error: ${err.response.data.error}`;
+        } else if (err.response.data.message) {
+          errorMessage = `Error: ${err.response.data.message}`;
+        }
+      } else if (err.message) {
+        errorMessage = `Error: ${err.message}`;
+      }
+
+      setMsg({ type: "error", text: errorMessage });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <h1>Create Society Profile</h1>
-      </div>
+    <Box sx={{ maxWidth: 600, mx: "auto", p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        Update Society Profile
+      </Typography>
 
-      <Paper sx={{ p: 3, maxWidth: 700, mx: "auto" }}>
-        {msg && (
-          <Alert severity={msg.type} sx={{ mb: 2 }} onClose={() => setMsg(null)}>
-            {msg.text}
-          </Alert>
-        )}
+      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+        Complete your society profile by adding description, category, and logo.
+      </Typography>
 
-        <form onSubmit={handleSubmit} noValidate>
-          <TextField
-            fullWidth
-            required
-            label="Society Name"
-            name="name"
-            value={profileInfo.name}
+      {msg && (
+        <Alert severity={msg.type} sx={{ mb: 2 }}>
+          {msg.text}
+        </Alert>
+      )}
+
+      <form onSubmit={handleSubmit} noValidate>
+        <TextField
+          fullWidth
+          required
+          label="Society Name"
+          name="name"
+          value={profileInfo.name}
+          onChange={handleChange}
+          margin="normal"
+          helperText="This will update your society name if different"
+        />
+
+        <TextField
+          fullWidth
+          required
+          label="Society Description"
+          name="description"
+          value={profileInfo.description}
+          onChange={handleChange}
+          margin="normal"
+          multiline
+          minRows={3}
+          helperText="Describe what your society is about"
+        />
+
+        <FormControl fullWidth required margin="normal">
+          <InputLabel id="category-label">Select Category</InputLabel>
+          <Select
+            labelId="category-label"
+            name="category"
+            value={profileInfo.category}
             onChange={handleChange}
-            margin="normal"
-          />
-
-          <TextField
-            fullWidth
-            required
-            label="Description"
-            name="description"
-            value={profileInfo.description}
-            onChange={handleChange}
-            margin="normal"
-            multiline
-            minRows={3}
-          />
-
-          <FormControl fullWidth required margin="normal">
-            <InputLabel id="category-label">Select Category</InputLabel>
-            <Select
-              labelId="category-label"
-              name="category"
-              value={profileInfo.category}
-              onChange={handleChange}
-              sx={{ height: 56 }}
-            >
-              {categories.map((cat) => (
-                <MenuItem key={cat.value} value={cat.value}>
-                  {cat.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <Box sx={{ mt: 2, mb: 3 }}>
-            <input
-              accept="image/*"
-              style={{ display: "none" }}
-              id="profile-image-upload"
-              type="file"
-              onChange={(e) => setImage(e.target.files[0])}
-              required
-            />
-            <label htmlFor="profile-image-upload">
-              <Button
-                variant="contained"
-                component="span"
-                startIcon={<CloudUploadIcon />}
-                fullWidth
-                sx={{
-                  py: 1.8,
-                  fontWeight: "bold",
-                  fontSize: "1.1rem",
-                  backgroundColor: "#1976d2",
-                  color: "#fff",
-                  "&:hover": { backgroundColor: "#1565c0" },
-                }}
-              >
-                Upload Society Logo
-              </Button>
-            </label>
-            {image && (
-              <Typography variant="body2" sx={{ mt: 1, fontStyle: "italic", textAlign: "center" }}>
-                Selected: {image.name}
-              </Typography>
-            )}
-          </Box>
-
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            disabled={loading}
-            startIcon={loading ? <CircularProgress color="inherit" size={20} /> : null}
-            sx={{
-              mt: 3,
-              py: 1.8,
-              fontWeight: "bold",
-              fontSize: "1.1rem",
-              backgroundColor: "#1976d2",
-              color: "#fff",
-              "&:hover": { backgroundColor: "#1565c0" },
-              "&.Mui-disabled": {
-                color: "rgba(255, 255, 255, 0.5)",
-                backgroundColor: "#90caf9",
-              },
-            }}
+            label="Select Category"
+            sx={{ height: 56 }}
           >
-            {loading ? "Submitting..." : "Submit Profile"}
-          </Button>
-        </form>
-      </Paper>
-    </div>
+            <MenuItem value="">
+              <em>-- Select a category --</em>
+            </MenuItem>
+            <MenuItem value="Academic">Academic</MenuItem>
+            <MenuItem value="Religious">Religious</MenuItem>
+            <MenuItem value="Social">Social</MenuItem>
+            <MenuItem value="Political">Political</MenuItem>
+            <MenuItem value="Other">Other</MenuItem>
+          </Select>
+        </FormControl>
+
+        <Box sx={{ mt: 2 }}>
+          <InputLabel htmlFor="image" sx={{ mb: 1 }}>
+            Society Logo *
+          </InputLabel>
+          <input
+            type="file"
+            id="image"
+            name="image"
+            accept="image/*"
+            onChange={handleFileChange}
+            required
+            style={{
+              display: "block",
+              padding: "8px",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+              width: "100%",
+            }}
+          />
+          {profileInfo.image && (
+            <Typography variant="body2" sx={{ mt: 1, fontStyle: "italic", color: "success.main" }}>
+              Selected: {profileInfo.image.name}
+            </Typography>
+          )}
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
+            Accepted formats: JPG, PNG, GIF, WebP (Max size: 5MB)
+          </Typography>
+        </Box>
+
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          disabled={loading}
+          startIcon={loading && <CircularProgress color="inherit" size={20} />}
+          sx={{
+            mt: 3,
+            py: 1.8,
+            fontWeight: "bold",
+            fontSize: "1.1rem",
+            backgroundColor: "#1976d2",
+            color: "#fff",
+            "&:hover": {
+              backgroundColor: "#1565c0",
+            },
+            "&:disabled": {
+              backgroundColor: "#ccc",
+            },
+          }}
+        >
+          {loading ? "Updating..." : "Update Society Profile"}
+        </Button>
+      </form>
+    </Box>
   );
 }
 
