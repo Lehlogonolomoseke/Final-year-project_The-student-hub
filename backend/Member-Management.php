@@ -15,10 +15,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 session_start();
 
 try {
-   
+
     require_once "db_supabase.php";
     $pdo = getSupabaseConnection();
-    
+
     if (!$pdo) {
         throw new Exception("Database connection failed");
     }
@@ -27,14 +27,14 @@ try {
 
     if ($method === 'GET') {
         $society_id = $_GET['society_id'] ?? null;
-        
+
         // If no society_id is provided, fetch the current user's society ID
         if (!$society_id || $society_id === 'undefined' || $society_id === '') {
 
             if (!isset($_SESSION['id'])) {
                 http_response_code(401);
                 echo json_encode([
-                    "success" => false, 
+                    "success" => false,
                     "error" => "User not logged in",
                     "debug" => [
                         "session_id" => session_id(),
@@ -44,35 +44,35 @@ try {
                 ]);
                 exit;
             }
-            
+
             $user_id = $_SESSION['id'];
-            
+
             // Get the society where this user is an admin
             $societyQuery = $pdo->prepare("SELECT society_id FROM societies WHERE admin_user_id = ?");
             $societyQuery->execute([$user_id]);
             $society = $societyQuery->fetch(PDO::FETCH_ASSOC);
-            
+
             if (!$society) {
                 http_response_code(404);
                 echo json_encode(["success" => false, "error" => "No society found for this user"]);
                 exit;
             }
-            
+
             // Return the society ID
             http_response_code(200);
             echo json_encode([
-                "success" => true, 
+                "success" => true,
                 "society_id" => $society['society_id']
             ]);
             exit;
         }
-    
+
         error_log("Received society_id: " . var_export($society_id, true));
 
         $errors = [];
 
         $society_id = intval($society_id);
-        
+
         if ($society_id <= 0) {
             $errors['society_id'] = "Invalid society ID format";
         }
@@ -86,7 +86,7 @@ try {
         // First verify the society exists
         $societyCheck = $pdo->prepare("SELECT society_id FROM societies WHERE society_id = ?");
         $societyCheck->execute([$society_id]);
-        
+
         if (!$societyCheck->fetch()) {
             http_response_code(404);
             echo json_encode(["success" => false, "error" => "Society not found"]);
@@ -118,7 +118,7 @@ try {
 
         http_response_code(200);
         echo json_encode([
-            "success" => true, 
+            "success" => true,
             "members" => $members,
             "total_count" => count($members)
         ]);
@@ -129,13 +129,13 @@ try {
         // Approve or reject a member request
         $input = file_get_contents("php://input");
         $data = json_decode($input, true);
-        
+
         if (json_last_error() !== JSON_ERROR_NONE) {
             http_response_code(400);
             echo json_encode(["success" => false, "error" => "Invalid JSON input"]);
             exit;
         }
-        
+
         $member_id = $data['member_id'] ?? null;
         $action = $data['action'] ?? null;
 
@@ -176,7 +176,7 @@ try {
         if ($existingMember['status'] !== 'pending') {
             http_response_code(400);
             echo json_encode([
-                "success" => false, 
+                "success" => false,
                 "error" => "Member request has already been processed",
                 "current_status" => $existingMember['status']
             ]);
@@ -190,9 +190,26 @@ try {
         $success = $updateStmt->execute([$new_status, $member_id]);
 
         if ($success && $updateStmt->rowCount() > 0) {
+            // Notify only if approved
+            if ($new_status === 'approved') {
+                // Get the user_id for this member
+                $userStmt = $pdo->prepare("SELECT user_id FROM society_members WHERE member_id = ?");
+                $userStmt->execute([$member_id]);
+                $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($user) {
+                    require_once "notify_user.php";
+                    notifyUser(
+                        $user['user_id'],
+                        "Your request to join the society has been approved ",
+                        "membership"
+                    );
+                }
+            }
+
             http_response_code(200);
             echo json_encode([
-                "success" => true, 
+                "success" => true,
                 "message" => "Member status updated successfully",
                 "member_id" => $member_id,
                 "new_status" => $new_status
@@ -201,6 +218,8 @@ try {
             http_response_code(500);
             echo json_encode(["success" => false, "error" => "Failed to update member status"]);
         }
+
+
         exit;
     }
 
@@ -211,20 +230,20 @@ try {
 } catch (PDOException $e) {
     // Log database error
     error_log("Member Management Database Error: " . $e->getMessage());
-    
+
     http_response_code(500);
     echo json_encode([
-        "success" => false, 
+        "success" => false,
         "error" => "Database error occurred"
     ]);
-    
+
 } catch (Exception $e) {
     // Log general error
     error_log("Member Management Error: " . $e->getMessage());
-    
+
     http_response_code(500);
     echo json_encode([
-        "success" => false, 
+        "success" => false,
         "error" => "Internal server error"
     ]);
 }

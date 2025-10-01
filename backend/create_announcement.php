@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once "db_supabase.php";
+require_once "notify_user.php";
 
 // 1. Authentication and Authorization
 if (!isset($_SESSION['id']) || !in_array($_SESSION['role'], ['ADMIN', 'DAYHOUSE'])) {
@@ -34,10 +35,14 @@ $announcement_type = $input['announcement_type'] ?? 'General Info';
 $is_pinned = filter_var($input['is_pinned'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
 $errors = [];
-if (empty(trim($title))) $errors[] = "Title is required.";
-if (empty(trim($content))) $errors[] = "Content is required.";
-if (empty($community_id)) $errors[] = "Community ID is required.";
-if (!in_array($community_type, ['society', 'dayhouse'])) $errors[] = "Invalid community type.";
+if (empty(trim($title)))
+    $errors[] = "Title is required.";
+if (empty(trim($content)))
+    $errors[] = "Content is required.";
+if (empty($community_id))
+    $errors[] = "Community ID is required.";
+if (!in_array($community_type, ['society', 'dayhouse']))
+    $errors[] = "Invalid community type.";
 
 if (!empty($errors)) {
     http_response_code(400);
@@ -48,20 +53,18 @@ if (!empty($errors)) {
 try {
     $pdo = getSupabaseConnection();
 
-    // 3. Security Check: Verify user is admin of the target community
+    // 3. Security Check
     $is_authorized = false;
     if ($community_type === 'society' && $creator_role === 'ADMIN') {
         $stmt = $pdo->prepare("SELECT 1 FROM societies WHERE society_id = ? AND admin_user_id = ?");
         $stmt->execute([$community_id, $creator_id]);
-        if ($stmt->fetch()) {
+        if ($stmt->fetch())
             $is_authorized = true;
-        }
     } elseif ($community_type === 'dayhouse' && $creator_role === 'DAYHOUSE') {
         $stmt = $pdo->prepare("SELECT 1 FROM dayhouses WHERE id = ? AND manager_id = ?");
         $stmt->execute([$community_id, $creator_id]);
-        if ($stmt->fetch()) {
+        if ($stmt->fetch())
             $is_authorized = true;
-        }
     }
 
     if (!$is_authorized) {
@@ -70,16 +73,12 @@ try {
         exit();
     }
 
-    // 4. Database Insertion
+    // 4. Insert Announcement
     $sql = "INSERT INTO announcements (title, content, created_by, society_id, dayhouse_id, announcement_type, is_pinned) 
             VALUES (?, ?, ?, ?, ?, ?, ?)";
-    
     $stmt = $pdo->prepare($sql);
-    
     $society_id_to_insert = ($community_type === 'society') ? $community_id : null;
     $dayhouse_id_to_insert = ($community_type === 'dayhouse') ? $community_id : null;
-
-    // Explicitly cast boolean to a string PostgreSQL understands
     $is_pinned_for_db = $is_pinned ? 'true' : 'false';
 
     $stmt->execute([
@@ -92,11 +91,28 @@ try {
         $is_pinned_for_db
     ]);
 
+    $announcement_id = $pdo->lastInsertId();
+
+    // 5. Send Notifications
+    if ($community_type === 'society') {
+        $usersStmt = $pdo->prepare("SELECT id FROM users WHERE society_id = ?");
+        $usersStmt->execute([$community_id]);
+    } else {
+        $usersStmt = $pdo->prepare("SELECT id FROM users WHERE dayhouse_id = ?");
+        $usersStmt->execute([$community_id]);
+    }
+    $users = $usersStmt->fetchAll(PDO::FETCH_COLUMN);
+
+    foreach ($users as $userId) {
+        $message = "New {$announcement_type} in your {$community_type}: {$title}";
+        notifyUser($userId, $message, "announcement");
+    }
+
     http_response_code(201);
     echo json_encode([
         'success' => true,
         'message' => 'Announcement created successfully.',
-        'announcement_id' => $pdo->lastInsertId()
+        'announcement_id' => $announcement_id
     ]);
 
 } catch (PDOException $e) {

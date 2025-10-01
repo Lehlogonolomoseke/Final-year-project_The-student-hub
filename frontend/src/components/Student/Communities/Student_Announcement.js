@@ -86,6 +86,7 @@ function SAnnouncement() {
       Emergency: "🚨",
       Academic: "📚",
       Social: "🎊",
+      "Automated Event Reminder": "🔔",
     };
     return icons[type] || "📢";
   };
@@ -103,6 +104,7 @@ function SAnnouncement() {
     "Emergency",
     "Academic",
     "Social",
+    "Automated Event Reminder",
   ];
 
   return (
@@ -233,6 +235,8 @@ function SAnnouncement() {
                               ? "bg-red-100 text-red-700"
                               : a.announcement_type === "Event"
                               ? "bg-green-100 text-green-700"
+                              : a.announcement_type === "Automated Event Reminder"
+                              ? "bg-blue-100 text-blue-700"
                               : "bg-gray-100 text-gray-700"
                           }`}
                         >

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Bell } from "lucide-react";
 import ujLogo from "../../../assets/images/logo.png";
-import profile from "../Communities/Profile";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -20,6 +21,14 @@ const Navbar = () => {
     // Check if user is logged in by checking localStorage
     const user = localStorage.getItem("user");
     setIsLoggedIn(!!user);
+
+    if (user) {
+      fetchUnreadCount();
+
+      // 🔄 auto-refresh unread count every 30 seconds
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
   }, []);
 
   useEffect(() => {
@@ -31,24 +40,33 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/get_notifications.php?unread=true", {
+        credentials: "include",
+      });
+      const result = await response.json();
+      if (result.success) {
+        setUnreadCount(result.unread_count);
+      }
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+    }
+  };
+
   const goToEvents = () => navigate("/student/event");
 
   const handleLogout = async () => {
     try {
-      // Call logout endpoint to clear server-side session
-      const response = await fetch("http://localhost:8000/logout.php", {
+      await fetch("http://localhost:8000/logout.php", {
         method: "POST",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       });
 
       // Clear local storage regardless of server response
       localStorage.removeItem("user");
       setIsLoggedIn(false);
-
-      // Redirect to login page
       navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
@@ -79,9 +97,7 @@ const Navbar = () => {
         </Link>
 
         {/* Desktop nav */}
-        <ul
-          className={`hidden md:flex space-x-8 font-semibold transition-colors duration-500 text-white`}
-        >
+        <ul className="hidden md:flex space-x-8 font-semibold transition-colors duration-500 text-white">
           <li>
             <Link to="/student/home" className="hover:text-[#f15a22] transition">
               Home
@@ -109,8 +125,21 @@ const Navbar = () => {
           )}
         </ul>
 
-        {/* Login / Logout button */}
-        <div className="hidden md:block">
+        {/* Right side: Bell + Login/Logout */}
+        <div className="flex items-center space-x-6">
+          {/* 🔔 Announcement Bell */}
+          {isLoggedIn && (
+            <Link to="/SNotifications" className="relative">
+              <Bell className="w-7 h-7 text-white hover:text-[#f15a22] transition" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
+          )}
+
+          {/* Login / Logout button */}
           {isLoggedIn ? (
             <button
               onClick={handleLoginClick}
@@ -176,7 +205,11 @@ const Navbar = () => {
           }`}
         >
           <li>
-            <Link to="/" onClick={() => setMenuOpen(false)} className="block hover:text-[#f15a22]">
+            <Link
+              to="/student/home"
+              onClick={() => setMenuOpen(false)}
+              className="block hover:text-[#f15a22]"
+            >
               Home
             </Link>
           </li>
@@ -203,11 +236,22 @@ const Navbar = () => {
           {isLoggedIn && (
             <li>
               <Link
-                to="/student/profile"
+                to="/UserProfile"
                 onClick={() => setMenuOpen(false)}
                 className="block hover:text-[#f15a22]"
               >
                 My Profile
+              </Link>
+            </li>
+          )}
+          {isLoggedIn && (
+            <li>
+              <Link
+                to="/student/announcements"
+                onClick={() => setMenuOpen(false)}
+                className="block hover:text-[#f15a22]"
+              >
+                Announcements
               </Link>
             </li>
           )}
