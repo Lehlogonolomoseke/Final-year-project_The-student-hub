@@ -1,84 +1,93 @@
-import React, { useState, useEffect } from "react";
-import { ArrowLeft } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { ArrowLeft, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import Confetti from "react-confetti";
+import { motion, AnimatePresence } from "framer-motion";
 
-function SAnnouncement() {
-  const [announcements, setAnnouncements] = useState([]);
+export default function StudentFeed() {
+  const [feed, setFeed] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
-  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
-  const [expandedAnnouncement, setExpandedAnnouncement] = useState(null);
-
+  const [expandedItem, setExpandedItem] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [toastNotifications, setToastNotifications] = useState([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchAnnouncements();
-  }, [searchTerm, typeFilter]);
-
-  const fetchAnnouncements = async () => {
+  const fetchFeed = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (searchTerm) params.append("search", searchTerm);
-      if (typeFilter) params.append("type", typeFilter);
-
-      const response = await fetch(`http://localhost:8000/get_announcements.php?${params}`, {
+      const res = await fetch("http://localhost:8000/get_combined_feed.php", {
         credentials: "include",
       });
-      const result = await response.json();
-
-      if (result.success) {
-        setAnnouncements(result.announcements);
+      const data = await res.json();
+      if (data.success) {
+        const newUnread =
+          data.feed.filter((item) => !item.is_read).length > feed.filter((f) => !f.is_read).length;
+        if (newUnread) {
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 3000);
+          const newItems = data.feed.filter(
+            (item) =>
+              !item.is_read && !feed.some((f) => f.id === item.id && f.source === item.source)
+          );
+          newItems.forEach((item) => addToast(item));
+        }
+        setFeed(data.feed);
       }
-    } catch (error) {
-      console.error("Error fetching announcements:", error);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
   };
 
-  const markAsRead = async (announcementId) => {
-    try {
-      const response = await fetch("http://localhost:8000/mark_announcement_read.php", {
+  useEffect(() => {
+    fetchFeed();
+    const interval = setInterval(fetchFeed, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const markAsRead = async (item) => {
+    if (item.is_read) return;
+
+    if (item.source === "notification") {
+      await fetch("http://localhost:8000/mark_notification_read.php", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ announcement_id: announcementId }),
+        body: JSON.stringify({ notification_id: item.id }),
       });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setAnnouncements((prev) =>
-          prev.map((a) => (a.announcement_id === announcementId ? { ...a, is_read: true } : a))
-        );
-      }
-    } catch (error) {
-      console.error("Error marking announcement as read:", error);
+    } else if (item.source === "announcement") {
+      await fetch("http://localhost:8000/mark_announcement_read.php", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ announcement_id: item.id }),
+      });
     }
-  };
 
-  const handleAnnouncementClick = (announcement) => {
-    if (!announcement.is_read) {
-      markAsRead(announcement.announcement_id);
-    }
-    setExpandedAnnouncement((prev) =>
-      prev === announcement.announcement_id ? null : announcement.announcement_id
+    setFeed((prev) =>
+      prev.map((f) => (f.id === item.id && f.source === item.source ? { ...f, is_read: true } : f))
     );
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  const handleItemClick = (item) => {
+    if (!item.is_read) markAsRead(item);
+    if (item.source === "announcement")
+      setExpandedItem((prev) => (prev === item.id ? null : item.id));
+    else if (item.source === "notification" && item.link) navigate(item.link);
+  };
+
+  const formatDate = (dateString) =>
+    new Date(dateString).toLocaleString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
 
-  const getAnnouncementIcon = (type) => {
+  const getIcon = (item) => {
+    if (item.source === "notification") return "🔔";
     const icons = {
       "General Info": "📢",
       Event: "🎉",
@@ -88,204 +97,161 @@ function SAnnouncement() {
       Social: "🎊",
       "Automated Event Reminder": "🔔",
     };
-    return icons[type] || "📢";
+    return icons[item.announcement_type] || "📢";
   };
 
-  const filteredAnnouncements = showUnreadOnly
-    ? announcements.filter((a) => !a.is_read)
-    : announcements;
+  const getBadgeColor = (type) => {
+    const colors = {
+      "General Info": "bg-blue-100 text-blue-800",
+      Event: "bg-green-100 text-green-800",
+      Maintenance: "bg-yellow-100 text-yellow-800",
+      Emergency: "bg-red-100 text-red-800",
+      Academic: "bg-purple-100 text-purple-800",
+      Social: "bg-pink-100 text-pink-800",
+      "Automated Event Reminder": "bg-indigo-100 text-indigo-800",
+    };
+    return colors[type] || "bg-gray-100 text-gray-800";
+  };
 
-  const unreadCount = announcements.filter((a) => !a.is_read).length;
+  const unreadCount = feed.filter((f) => !f.is_read).length;
 
-  const announcementTypes = [
-    "General Info",
-    "Event",
-    "Maintenance",
-    "Emergency",
-    "Academic",
-    "Social",
-    "Automated Event Reminder",
-  ];
+  // Toast notification for new unread items
+  const addToast = (item) => {
+    setToastNotifications((prev) => [...prev, { ...item, id: `${item.source}-${item.id}` }]);
+    setTimeout(() => {
+      setToastNotifications((prev) => prev.filter((t) => t.id !== `${item.source}-${item.id}`));
+    }, 4000);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Sticky Top Bar */}
-      <div className="sticky top-0 z-10 flex items-center gap-2 px-4 py-3 bg-white border-b shadow-sm">
+    <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white flex flex-col relative">
+      {/* Confetti */}
+      {showConfetti && <Confetti numberOfPieces={200} recycle={false} gravity={0.3} />}
+
+      {/* Toast notifications */}
+      <div className="fixed top-5 right-5 z-50 flex flex-col gap-2">
+        <AnimatePresence>
+          {toastNotifications.map((item) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 50 }}
+              className="bg-white shadow-lg border-l-4 border-orange-400 p-3 rounded-lg flex justify-between items-center w-80"
+            >
+              <div>
+                <strong>{item.title || item.message}</strong>
+                <p className="text-sm text-gray-600">{item.source}</p>
+              </div>
+              <button
+                onClick={() =>
+                  setToastNotifications((prev) => prev.filter((t) => t.id !== item.id))
+                }
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* Top Bar */}
+      <div className="sticky top-0 z-10 flex items-center gap-2 px-4 py-3 bg-white border-b shadow-md">
         <button
           onClick={() => navigate("/student/home")}
           className="flex items-center gap-2 text-orange-700 hover:text-orange-900 font-medium"
         >
           <ArrowLeft className="w-5 h-5" /> Back
         </button>
+        <span className="ml-auto text-sm text-gray-600 font-semibold">{unreadCount} unread 🎉</span>
       </div>
 
-      {/* Hero Header */}
-      <div className="text-center py-10 px-6 bg-gradient-to-r from-orange-100 via-orange-50 to-white shadow rounded-b-3xl mb-8">
+      {/* Hero Section */}
+      <div className="text-center py-10 px-6 bg-gradient-to-r from-orange-100 via-orange-50 to-white shadow-lg rounded-b-3xl mb-8">
         <h1 className="text-4xl md:text-5xl font-extrabold text-orange-700 mb-2 flex items-center justify-center gap-2">
-          📢 Announcements
+          🎓 Student Feed
         </h1>
-        <div className="w-24 h-1 bg-orange-400 rounded-full mx-auto mb-4"></div>
         <p className="text-gray-700 text-lg max-w-2xl mx-auto">
-          Stay updated with the latest news from your communities
+          Keep up with your communities! New announcements and notifications await.
         </p>
-        {unreadCount > 0 && (
-          <span className="inline-block mt-4 bg-red-500 text-white px-4 py-1.5 rounded-full text-sm font-semibold shadow">
-            {unreadCount} unread
-          </span>
-        )}
       </div>
 
-      {/* Filters */}
-      <div className="max-w-5xl mx-auto mb-8 flex flex-col sm:flex-row gap-4 items-start sm:items-center bg-white p-4 rounded-xl shadow">
-        <div className="relative flex-1 max-w-md">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
-          <input
-            type="text"
-            placeholder="Search announcements..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
-          />
-        </div>
-
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500"
-        >
-          <option value="">All Types</option>
-          {announcementTypes.map((type) => (
-            <option key={type} value={type}>
-              {getAnnouncementIcon(type)} {type}
-            </option>
-          ))}
-        </select>
-
-        <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showUnreadOnly}
-            onChange={(e) => setShowUnreadOnly(e.target.checked)}
-            className="h-4 w-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
-          />
-          📬 Unread only
-        </label>
-      </div>
-
-      {/* Announcements */}
-      <div className="max-w-5xl mx-auto w-full px-4 sm:px-0">
+      {/* Feed */}
+      <div className="max-w-5xl mx-auto w-full px-4 sm:px-0 py-6 space-y-6">
         {loading ? (
           <div className="text-center py-12">
-            <div className="text-5xl mb-4 animate-bounce">⏳</div>
-            <p className="text-gray-600">Loading announcements...</p>
+            <div className="text-6xl mb-4 animate-bounce">⏳</div>
+            <p className="text-gray-600 font-semibold text-lg">Loading your feed...</p>
           </div>
-        ) : filteredAnnouncements.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-2xl shadow">
-            <div className="text-6xl mb-4">{showUnreadOnly ? "✅" : "📭"}</div>
-            <h3 className="text-lg font-medium text-gray-700 mb-1">
-              {showUnreadOnly ? "All caught up!" : "No announcements available"}
+        ) : feed.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-3xl shadow-lg">
+            <div className="text-7xl mb-4">📭</div>
+            <h3 className="text-xl font-bold text-gray-700 mb-2">
+              No notifications or announcements
             </h3>
-            <p className="text-gray-500">
-              {showUnreadOnly
-                ? "No unread announcements right now."
-                : "Check back later for updates."}
-            </p>
-            {showUnreadOnly && (
-              <button
-                onClick={() => setShowUnreadOnly(false)}
-                className="mt-3 text-orange-600 hover:text-orange-800 text-sm font-medium"
-              >
-                Show all announcements
-              </button>
-            )}
+            <p className="text-gray-500 text-md">You are all caught up! </p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {filteredAnnouncements.map((a) => (
-              <div
-                key={a.announcement_id}
-                onClick={() => handleAnnouncementClick(a)}
-                className={`rounded-2xl transition-all cursor-pointer overflow-hidden shadow hover:shadow-lg ${
-                  a.is_pinned
-                    ? "border-l-4 border-yellow-400 bg-yellow-50"
-                    : a.is_read
-                    ? "border border-gray-200 bg-white"
-                    : "border-l-4 border-orange-400 bg-orange-50"
-                } ${expandedAnnouncement === a.announcement_id ? "ring-2 ring-orange-300" : ""}`}
+          <AnimatePresence>
+            {feed.map((item) => (
+              <motion.div
+                key={`${item.source}-${item.id}`}
+                initial={{ opacity: 0, x: item.is_read ? 0 : -100 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                onClick={() => handleItemClick(item)}
+                className={`rounded-3xl transition-all cursor-pointer overflow-hidden shadow-lg hover:scale-105 transform p-5 ${
+                  item.is_read
+                    ? "bg-gray-100"
+                    : "bg-orange-50 border-l-4 border-orange-400 animate-pulse"
+                } ${expandedItem === item.id ? "ring-4 ring-orange-300" : ""}`}
               >
-                <div className="p-6">
-                  {/* Header row */}
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        {a.is_pinned && <span className="text-yellow-600">📌</span>}
-                        {!a.is_read && (
-                          <span className="w-2.5 h-2.5 bg-orange-500 rounded-full"></span>
-                        )}
-                        <h3
-                          className={`font-semibold text-lg ${
-                            a.is_read ? "text-gray-700" : "text-gray-900"
-                          }`}
-                        >
-                          {a.title}
-                        </h3>
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full font-medium ${
-                            a.announcement_type === "Emergency"
-                              ? "bg-red-100 text-red-700"
-                              : a.announcement_type === "Event"
-                              ? "bg-green-100 text-green-700"
-                              : a.announcement_type === "Automated Event Reminder"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {getAnnouncementIcon(a.announcement_type)} {a.announcement_type}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-2">
-                        <span>🏛️ {a.community_name}</span>
-                        <span>🕐 {formatDate(a.created_at)}</span>
-                      </div>
-                    </div>
-                    <span className="text-gray-400">
-                      {expandedAnnouncement === a.announcement_id ? "🔼" : "🔽"}
-                    </span>
-                  </div>
-
-                  {/* Content */}
-                  <div
-                    className={`text-gray-700 mt-2 ${
-                      expandedAnnouncement === a.announcement_id
-                        ? "whitespace-pre-wrap"
-                        : "line-clamp-3"
-                    }`}
-                  >
-                    {a.content}
-                  </div>
-
-                  {/* Show less */}
-                  {expandedAnnouncement === a.announcement_id && a.content.length > 150 && (
-                    <div className="pt-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setExpandedAnnouncement(null);
-                        }}
-                        className="text-sm text-orange-600 hover:text-orange-800 font-medium"
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      {!item.is_read && (
+                        <span className="w-3 h-3 bg-orange-500 rounded-full animate-ping"></span>
+                      )}
+                      <h3 className="font-bold text-lg text-gray-900">
+                        {item.title || item.message}
+                      </h3>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-semibold ${getBadgeColor(
+                          item.announcement_type
+                        )}`}
                       >
-                        🔼 Show less
-                      </button>
+                        {getIcon(item)} {item.announcement_type || item.type}
+                      </span>
                     </div>
+
+                    {item.source === "announcement" && (
+                      <div
+                        className={`text-gray-700 mt-2 ${
+                          expandedItem === item.id ? "whitespace-pre-wrap" : "line-clamp-3"
+                        }`}
+                      >
+                        {item.content}
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-500 mt-2">
+                      {item.community_name && <span>🏛️ {item.community_name}</span>}
+                      <span>🕐 {formatDate(item.created_at)}</span>
+                      <span className="capitalize">{item.source}</span>
+                    </div>
+                  </div>
+                  {item.source === "announcement" && (
+                    <span className="text-gray-400 text-xl">
+                      {expandedItem === item.id ? "🔼" : "🔽"}
+                    </span>
                   )}
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </AnimatePresence>
         )}
       </div>
     </div>
   );
 }
-
-export default SAnnouncement;

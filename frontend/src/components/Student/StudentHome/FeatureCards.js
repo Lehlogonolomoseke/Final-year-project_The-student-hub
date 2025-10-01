@@ -65,16 +65,6 @@ const FeatureCards = () => {
               ) : (
                 <p className="text-sm text-gray-700 leading-relaxed">{feature.description}</p>
               )}
-              {feature.title === "Join a Community" ? (
-                <button
-                  onClick={() => navigate("/SAnnouncement")}
-                  className="mt-4 px-6 py-2 bg-[#f15a22] text-white rounded-lg hover:bg-[#d14b1e] transition"
-                >
-                  Go to Announcements
-                </button>
-              ) : (
-                <p className="text-sm text-gray-700 leading-relaxed">{feature.description}</p>
-              )}
             </div>
           ))}
         </div>

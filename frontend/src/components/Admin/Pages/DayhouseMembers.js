@@ -7,15 +7,10 @@ import {
   Paper,
   Grid,
   TextField,
-  TableContainer,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
   Button,
   CircularProgress,
   Chip,
+  Stack,
 } from "@mui/material";
 
 function ManageDayhouseMembers() {
@@ -40,7 +35,6 @@ function ManageDayhouseMembers() {
         if (!data.success) throw new Error(data.error || "Failed to get dayhouse ID");
         setDayhouseId(data.dayhouse_id);
       } catch (err) {
-        console.error(err);
         setError(err.message);
         setLoading(false);
       }
@@ -70,7 +64,6 @@ function ManageDayhouseMembers() {
         setMembers(membersRes.data.members);
         calculateStats(membersRes.data.members);
       } catch (err) {
-        console.error(err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -100,7 +93,6 @@ function ManageDayhouseMembers() {
         alert(res.data.message || "Failed to update payment status");
       }
     } catch (err) {
-      console.error(err);
       alert("Error updating payment status");
     }
   };
@@ -117,7 +109,6 @@ function ManageDayhouseMembers() {
         calculateStats(membersRes.data.members);
       }
     } catch (err) {
-      console.error(err);
       setError(err.message);
     }
   };
@@ -162,6 +153,7 @@ function ManageDayhouseMembers() {
         <Typography variant="h6">Managing: {dayhouse.name}</Typography>
       </Paper>
 
+      {/* Stats */}
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12} sm={6} md={3}>
           <Paper elevation={3} sx={{ py: 3, textAlign: "center", backgroundColor: "#e3f2fd" }}>
@@ -181,6 +173,7 @@ function ManageDayhouseMembers() {
         </Grid>
       </Grid>
 
+      {/* Search */}
       <Box mb={3}>
         <TextField
           fullWidth
@@ -191,60 +184,76 @@ function ManageDayhouseMembers() {
         />
       </Box>
 
+      {/* Members Table */}
       {filteredMembers.length === 0 ? (
         <Typography align="center" sx={{ mt: 5 }}>
           No members found.
         </Typography>
       ) : (
-        <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell>ID</TableCell>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Joined</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredMembers.map((member, index) => (
-                <TableRow
-                  key={member.id || member.user_id}
-                  hover
-                  sx={{ bgcolor: index % 2 === 0 ? "white" : "grey.100" }}
-                >
-                  <TableCell>{member.id || member.user_id}</TableCell>
-                  <TableCell>
-                    {member.First_Name} {member.last_Name}
-                  </TableCell>
-                  <TableCell>{member.Email}</TableCell>
-                  <TableCell>{new Date(member.joined_at).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    {member.fee_paid === 1 ? (
-                      <Chip label="PAID" color="success" size="small" />
-                    ) : (
-                      <Chip label="PENDING" color="warning" size="small" />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {member.fee_paid === 0 && (
-                      <Button
-                        variant="outlined"
-                        color="success"
-                        size="small"
-                        onClick={() => markAsPaid(member.id || member.user_id)}
-                      >
-                        Mark Paid
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <Paper elevation={3} sx={{ overflowX: "auto", borderRadius: 2 }}>
+          {/* Header */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "10% 25% 25% 15% 15% 10%" },
+              backgroundColor: "grey.100",
+              fontWeight: "bold",
+              p: 1.5,
+              borderBottom: "2px solid #ccc",
+              gap: 1,
+            }}
+          >
+            <Box>ID</Box>
+            <Box>Name</Box>
+            <Box>Email</Box>
+            <Box>Joined</Box>
+            <Box>Status</Box>
+            <Box textAlign="center">Actions</Box>
+          </Box>
+
+          {/* Data Rows */}
+          {filteredMembers.map((member, idx) => (
+            <Box
+              key={member.id || member.user_id}
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", sm: "10% 25% 25% 15% 15% 10%" },
+                p: 1.5,
+                borderBottom: "1px solid #eee",
+                backgroundColor: idx % 2 === 0 ? "white" : "grey.50",
+                alignItems: "center",
+                gap: 1,
+                "&:hover": { backgroundColor: "grey.100" },
+              }}
+            >
+              <Box>{member.id || member.user_id}</Box>
+              <Box>
+                {member.First_Name} {member.last_Name}
+              </Box>
+              <Box>{member.Email}</Box>
+              <Box>{new Date(member.joined_at).toLocaleDateString()}</Box>
+              <Box>
+                {member.fee_paid === 1 ? (
+                  <Chip label="PAID" color="success" size="small" sx={{ fontWeight: "bold" }} />
+                ) : (
+                  <Chip label="PENDING" color="warning" size="small" sx={{ fontWeight: "bold" }} />
+                )}
+              </Box>
+              <Box textAlign="center">
+                {member.fee_paid === 0 && (
+                  <Button
+                    variant="contained"
+                    color="success"
+                    size="small"
+                    onClick={() => markAsPaid(member.id || member.user_id)}
+                  >
+                    Mark Paid
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          ))}
+        </Paper>
       )}
     </Container>
   );

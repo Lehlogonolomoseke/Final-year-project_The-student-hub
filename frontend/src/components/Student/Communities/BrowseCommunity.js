@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import dayhouseImg from "../../../assets/images/hero.png";
-import societyImg from "../../../assets/images/societies.jpg";
+import societyImg from "../../../assets/images/society.jpg";
 import Footer from "../StudentHome/Footer";
 
 const BrowseCommunity = () => {

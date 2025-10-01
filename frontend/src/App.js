@@ -49,7 +49,6 @@ import Register from "components/Student/Register";
 import AttendancePage from "components/Student/Communities/Attendance";
 import UserProfile from "components/Student/Communities/Profile";
 import SAnnouncement from "components/Student/Communities/Student_Announcement";
-import SNotifications from "components/Student/Communities/SNotifications";
 
 import AdminLayout from "components/Admin/AdminLayout/AdminLayout";
 import AdminSendFile from "components/Admin/Pages/admin_Send_File";
@@ -165,7 +164,6 @@ export default function App() {
         <Route path="/attendance" element={<AttendancePage />} />
         <Route path="/UserProfile" element={<UserProfile />} />
         <Route path="/SAnnouncement" element={<SAnnouncement />} />
-        <Route path="/SNotifications" element={<SNotifications />} />
         <Route
           path="/society/:id"
           element={

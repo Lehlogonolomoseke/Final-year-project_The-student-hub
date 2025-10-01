@@ -2,12 +2,6 @@ import React, { useEffect, useState, useMemo } from "react";
 import {
   Container,
   Typography,
-  TableContainer,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
   Paper,
   Button,
   Box,
@@ -100,6 +94,7 @@ function ManageMembersPage() {
         <CircularProgress />
       </Box>
     );
+
   if (error)
     return (
       <Container maxWidth="md" sx={{ mt: 4 }}>
@@ -127,143 +122,130 @@ function ManageMembersPage() {
         <Typography variant="body1">No members or requests found.</Typography>
       ) : (
         <>
-          <TableContainer
-            component={Paper}
-            elevation={3}
-            sx={{ maxHeight: 600, overflowX: "auto" }}
-          >
-            <Table
-              stickyHeader
+          <Paper elevation={3} sx={{ overflowX: "auto" }}>
+            {/* Header Row */}
+            <Box
               sx={{
-                tableLayout: "fixed",
-                width: "100%",
-                borderCollapse: "collapse",
-                "& th, & td": { padding: "8px", border: "1px solid #ddd" }, // unify padding & border
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", sm: "25% 30% 15% 15% 15%" },
+                backgroundColor: "grey.100",
+                fontWeight: "bold",
+                p: 1.5,
+                gap: 1,
+                alignItems: "center",
+                borderBottom: "2px solid #ccc",
               }}
             >
-              <TableHead>
-                <TableRow>
-                  {["Name", "Email", "Status", "Joined At", "Actions"].map((title, index) => (
-                    <TableCell
-                      key={index}
-                      align={index > 1 ? "center" : "left"}
-                      sx={{
-                        fontWeight: "bold",
-                        fontSize: "0.95rem",
-                        minWidth:
-                          index === 0
-                            ? 200
-                            : index === 1
-                            ? 250
-                            : index === 2
-                            ? 120
-                            : index === 3
-                            ? 180
-                            : 200,
-                        backgroundColor: "action.hover",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
+              <Box>Name</Box>
+              <Box>Email</Box>
+              <Box>Status</Box>
+              <Box>Joined At</Box>
+              <Box textAlign="center">Actions</Box>
+            </Box>
+
+            {/* Data Rows */}
+            {members.map((member, idx) => (
+              <Box
+                key={member.member_id}
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", sm: "25% 30% 15% 15% 15%" },
+                  p: 1.5,
+                  borderBottom: "1px solid #eee",
+                  backgroundColor: idx % 2 === 0 ? "white" : "grey.50",
+                  alignItems: "center",
+                  gap: 1,
+                  transition: "background 0.2s",
+                  "&:hover": {
+                    backgroundColor: "grey.100",
+                  },
+                }}
+              >
+                {/* Name */}
+                <Box
+                  sx={{
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {member.first_name} {member.last_name}
+                </Box>
+
+                {/* Email */}
+                <Tooltip title={member.email} arrow>
+                  <Box
+                    sx={{
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {member.email}
+                  </Box>
+                </Tooltip>
+
+                {/* Status */}
+                <Box>
+                  <Chip
+                    label={member.status || "Pending"}
+                    color={
+                      member.status === "approved"
+                        ? "success"
+                        : member.status === "rejected"
+                        ? "error"
+                        : "warning"
+                    }
+                    size="small"
+                    sx={{ fontWeight: "bold", textTransform: "capitalize" }}
+                  />
+                </Box>
+
+                {/* Joined At */}
+                <Box>{new Date(member.joined_at).toLocaleDateString()}</Box>
+
+                {/* Actions */}
+                <Box textAlign="center">
+                  {member.status === "pending" ? (
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      spacing={1}
+                      justifyContent="center"
+                      alignItems="center"
                     >
-                      {title}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-
-              <TableBody>
-                {members.map((member) => (
-                  <TableRow key={member.member_id} hover>
-                    <TableCell>
-                      <Tooltip title={`${member.first_name} ${member.last_name}`} arrow>
-                        <span>
-                          {member.first_name} {member.last_name}
-                        </span>
-                      </Tooltip>
-                    </TableCell>
-
-                    <TableCell>
-                      <Tooltip title={member.email} arrow>
-                        <span>{member.email}</span>
-                      </Tooltip>
-                    </TableCell>
-
-                    <TableCell align="center">
-                      <Chip
-                        label={member.status || "Pending"}
-                        color={
-                          member.status === "approved"
-                            ? "success"
-                            : member.status === "rejected"
-                            ? "error"
-                            : "warning"
-                        }
+                      <Button
+                        variant="contained"
+                        color="success"
                         size="small"
-                        sx={{
-                          textTransform: "capitalize",
-                          fontWeight: "bold",
-                          minWidth: 90,
-                          fontSize: "0.8rem",
-                        }}
-                      />
-                    </TableCell>
+                        sx={{ minWidth: 90 }}
+                        onClick={() => updateMemberStatus(member.member_id, "approve")}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        size="small"
+                        sx={{ minWidth: 90 }}
+                        onClick={() => updateMemberStatus(member.member_id, "reject")}
+                      >
+                        Reject
+                      </Button>
+                    </Stack>
+                  ) : (
+                    <Typography
+                      color={member.status === "approved" ? "success.main" : "error.main"}
+                      fontWeight="bold"
+                    >
+                      {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            ))}
+          </Paper>
 
-                    <TableCell align="center">
-                      {new Date(member.joined_at).toLocaleString()}
-                    </TableCell>
-
-                    <TableCell align="center">
-                      {member.status === "pending" ? (
-                        <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap">
-                          <Button
-                            variant="contained"
-                            color="success"
-                            size="small"
-                            onClick={() => updateMemberStatus(member.member_id, "approve")}
-                            sx={{
-                              fontWeight: "bold",
-                              textTransform: "capitalize",
-                              fontSize: "0.8rem",
-                              py: 0.5,
-                            }}
-                          >
-                            Approve
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            size="small"
-                            onClick={() => updateMemberStatus(member.member_id, "reject")}
-                            sx={{
-                              fontWeight: "bold",
-                              textTransform: "capitalize",
-                              fontSize: "0.8rem",
-                              py: 0.5,
-                              color: "#d32f2f",
-                              borderColor: "#d32f2f",
-                              "&:hover": { backgroundColor: "#ffebee", borderColor: "#d32f2f" },
-                            }}
-                          >
-                            Reject
-                          </Button>
-                        </Stack>
-                      ) : (
-                        <Typography
-                          color={member.status === "approved" ? "success.main" : "error.main"}
-                          fontWeight="bold"
-                          fontSize="0.85rem"
-                        >
-                          {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
-                        </Typography>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
+          {/* Summary */}
           <Paper elevation={1} sx={{ mt: 4, p: 2, borderRadius: 1 }}>
             <Typography variant="h6" mb={1}>
               Members Summary

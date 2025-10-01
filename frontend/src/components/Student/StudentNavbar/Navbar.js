@@ -12,50 +12,47 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Close mobile menu on route change
   useEffect(() => {
-    // Close mobile menu on route change
     setMenuOpen(false);
   }, [location]);
 
+  // Detect scroll for navbar styling
   useEffect(() => {
-    // Check if user is logged in by checking localStorage
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Check login and fetch unread count
+  useEffect(() => {
     const user = localStorage.getItem("user");
     setIsLoggedIn(!!user);
 
     if (user) {
       fetchUnreadCount();
-
-      // 🔄 auto-refresh unread count every 30 seconds
-      const interval = setInterval(fetchUnreadCount, 30000);
+      const interval = setInterval(fetchUnreadCount, 30000); // auto-refresh
       return () => clearInterval(interval);
     }
   }, []);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll);
-
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
+  // Fetch combined feed to calculate unread count
   const fetchUnreadCount = async () => {
     try {
-      const response = await fetch("http://localhost:8000/get_notifications.php?unread=true", {
+      const response = await fetch("http://localhost:8000/get_combined_feed.php", {
         credentials: "include",
       });
-      const result = await response.json();
-      if (result.success) {
-        setUnreadCount(result.unread_count);
+      const data = await response.json();
+      if (data.success) {
+        const unread = data.feed.filter((item) => !item.is_read).length;
+        setUnreadCount(unread);
       }
     } catch (error) {
       console.error("Error fetching unread count:", error);
     }
   };
 
-  const goToEvents = () => navigate("/student/event");
-
+  // Logout handler
   const handleLogout = async () => {
     try {
       await fetch("http://localhost:8000/logout.php", {
@@ -63,13 +60,9 @@ const Navbar = () => {
         credentials: "include",
         headers: { "Content-Type": "application/json" },
       });
-
-      // Clear local storage regardless of server response
-      localStorage.removeItem("user");
-      setIsLoggedIn(false);
-      navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
+    } finally {
       localStorage.removeItem("user");
       setIsLoggedIn(false);
       navigate("/login");
@@ -77,12 +70,11 @@ const Navbar = () => {
   };
 
   const handleLoginClick = () => {
-    if (isLoggedIn) {
-      handleLogout();
-    } else {
-      navigate("/login");
-    }
+    if (isLoggedIn) handleLogout();
+    else navigate("/login");
   };
+
+  const goToEvents = () => navigate("/student/event");
 
   return (
     <nav
@@ -127,9 +119,8 @@ const Navbar = () => {
 
         {/* Right side: Bell + Login/Logout */}
         <div className="flex items-center space-x-6">
-          {/* 🔔 Announcement Bell */}
           {isLoggedIn && (
-            <Link to="/SNotifications" className="relative">
+            <Link to="/SAnnouncement" className="relative">
               <Bell className="w-7 h-7 text-white hover:text-[#f15a22] transition" />
               {unreadCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
@@ -139,7 +130,6 @@ const Navbar = () => {
             </Link>
           )}
 
-          {/* Login / Logout button */}
           {isLoggedIn ? (
             <button
               onClick={handleLoginClick}
@@ -197,7 +187,7 @@ const Navbar = () => {
         </button>
       </div>
 
-      {/* Mobile menu links */}
+      {/* Mobile menu */}
       {menuOpen && (
         <ul
           className={`md:hidden px-4 py-4 space-y-3 font-semibold transition-colors duration-500 ${
@@ -234,50 +224,41 @@ const Navbar = () => {
             </button>
           </li>
           {isLoggedIn && (
-            <li>
-              <Link
-                to="/UserProfile"
-                onClick={() => setMenuOpen(false)}
-                className="block hover:text-[#f15a22]"
-              >
-                My Profile
-              </Link>
-            </li>
+            <>
+              <li>
+                <Link
+                  to="/UserProfile"
+                  onClick={() => setMenuOpen(false)}
+                  className="block hover:text-[#f15a22]"
+                >
+                  My Profile
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/SAnnouncement"
+                  onClick={() => setMenuOpen(false)}
+                  className="block hover:text-[#f15a22]"
+                >
+                  Announcements
+                </Link>
+              </li>
+            </>
           )}
-          {isLoggedIn && (
-            <li>
-              <Link
-                to="/student/announcements"
-                onClick={() => setMenuOpen(false)}
-                className="block hover:text-[#f15a22]"
-              >
-                Announcements
-              </Link>
-            </li>
-          )}
-
           <li>
-            {isLoggedIn ? (
-              <button
-                onClick={() => {
-                  handleLoginClick();
-                  setMenuOpen(false);
-                }}
-                className="w-full bg-[#f15a22] text-white py-2 rounded-full font-semibold hover:bg-[#d14e1f] transition"
-              >
-                Logout
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  handleLoginClick();
-                  setMenuOpen(false);
-                }}
-                className="w-full border-2 border-[#f15a22] text-[#f15a22] py-2 rounded-full font-semibold hover:bg-[#f15a22] hover:text-white transition"
-              >
-                Login
-              </button>
-            )}
+            <button
+              onClick={() => {
+                handleLoginClick();
+                setMenuOpen(false);
+              }}
+              className={`w-full py-2 rounded-full font-semibold ${
+                isLoggedIn
+                  ? "bg-[#f15a22] text-white hover:bg-[#d14e1f]"
+                  : "border-2 border-[#f15a22] text-[#f15a22] hover:bg-[#f15a22] hover:text-white"
+              } transition`}
+            >
+              {isLoggedIn ? "Logout" : "Login"}
+            </button>
           </li>
         </ul>
       )}
