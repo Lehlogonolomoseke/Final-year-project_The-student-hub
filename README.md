@@ -1,95 +1,86 @@
-Student Hub Web App
+# UJ Student Hub — Final Year Project  
 
-This is a full-stack web app student hub. It's a place where you can create events, upload files, and keep track of everything with a calendar its also a application in which student can join and view Societies and lastly get the latest information regarding whats happening  We built the frontend with React.js and the backend with PHP using XAMPP and MySQL.
+A centralized digital platform for student societies, events, budgeting, and engagement at the University of Johannesburg.
 
-Getting It Running
+---
 
-What You'll Need
+## Overview  
+The **Student Hub** is a full-stack web application designed to modernize how student societies operate.  
+At UJ, society event management is still manual and scattered across WhatsApp chats, posters, and separate systems — causing missed events, admin delays, and poor tracking.
 
- makee sure you have these installed on your machine:
+Our solution centralizes everything into a single platform where:
+- Students discover and join societies  
+- Admins manage events, budgets, and members  
+- SDPs (Student Development Practitioners) monitor activity and engagement  
 
-For the Backend (PHP + MySQL):
+This project was built by **Team 44 — The Infinites** as our final-year capstone.
 
-* XAMPP: This tool gave me Apache, PHP, and MySQL all in one package.
-* VS Code: Or any other code editor will do.
+---
 
-For the Frontend (React):
+## Problem Statement  
+Student societies currently face:
+- Poor visibility of society-exclusive events  
+- Manual approval processes for venues & budgets  
+- No accurate member tracking  
+- Lack of analytics for SDPs  
+- No centralized digital system  
 
-* Node.js & npm: Needed to run the React part.
-* Git: Used for cloning the project from GitHub.
+---
 
-Backend Setup (PHP + MySQL)
+## Solution Summary  
+The **Student Hub** solves these challenges through:
 
-Here’s how I got the backend running:
+## Student Features
+- Browse and RSVP for events  
+- Join societies  
+- Receive digital updates and announcements  
 
-1. Cloned the repository:
-   git clone [https://github.com/your-username/student-hub.git](https://github.com/your-username/student-hub.git)
+### Society Admin Features
+- Create events  
+- Upload files and proposals  
+- Submit venue and budget requests  
+- Manage members  
 
-2. Moved the backend files: We placed the backend folder inside the xampp/htdocs directory. So the path looked like this: /xampp/htdocs/student-hub/backend
+### SDP (Oversight) Features
+- Approve or reject proposals  
+- Allocate budgets fairly  
+- Track engagement analytics  
 
-3. Set up the database:
+---
 
-   * Opened the XAMPP Control Panel and started Apache and MySQL.
-   * Went to [http://localhost/phpmyadmin](http://localhost/phpmyadmin) in my browser.
-   * Created a new database named "student\_hub".
-   * Created tables like users, events, etc.
+## Stakeholders  
+- **Students** — event discovery and participation  
+- **Society & Day-House Admins** — management tools  
+- **Student Development Practitioners (SDPs)** — oversight and reporting  
 
-4. Connected to the database:
+---
 
-   * Opened the db.php file located at backend/tools/db.php.
-   * Used the default connection, which worked fine because I didn’t change my MySQL password:
-     \$conn = new mysqli("localhost", "root", "", "student\_hub");
+##  Tech Stack  
 
-5. (Optional) Tested the API:
+### **Frontend (React.js)**
+- React.js  
+- TailwindCSS  
+- axios  
+- react-router-dom  
+- @schedule-x/react (calendar)  
 
-   * I used Postman to test routes like:
-     POST [http://localhost/student-hub/backend/login.php](http://localhost/student-hub/backend/login.php)
+### **Backend (Dockerized PHP + MySQL)**
+- PHP 8  
+- MySQL  
+- MySQLi  
+- Docker & Docker Compose  
 
-Frontend Setup (React)
+---
 
-Here’s how I set up the React frontend:
+## Backend Setup (Docker)
 
-1. Navigated into the project folder:
-   cd student-hub
+### **Prerequisites**
+- Docker  
+- Docker Compose  
 
-2. Installed all dependencies:
-   npm install
+### **Steps to Run Backend**
+1. Clone the repository:
+```bash
+git clone https://github.com/Lehlogonolomoseke/Final-year-project_The-student-hub.git
+cd Final-year-project_The-student-hub
 
-3. Started the development server: npm start make sure you are in the frontend directory 
-
-4. Opened the app in the browser: go to [http://localhost:3000](http://localhost:3000) everything should be working.
-
-Folder Structure
-
-I tried to keep everything organized and simple. Here’s what the project looks like:
-
-student-hub/
-|
-├── backend/                  - This is where all the PHP code is.
-│   ├── Event-creation.php    - Handles event creation.
-│   ├── upload.php            - Handles file uploads.
-│   └── tools/
-│       └── db.php            - The database connection file.
-|
-├── src/                      - All the React frontend code.
-│   ├── admin/
-│   │   ├── CreateEvent.jsx   - The event creation form.
-│   │   └── AdminSendFile.jsx - The file upload page for admins.
-│   ├── App.js                - The main app component.
-│   └── index.js              - React entry point.
-|
-├── public/                   - Static assets for the React app.
-├── package.json              - Frontend dependencies and scripts.
-└── What I Used
-
-React Frontend:
-
-* axios: For making HTTP requests to the backend.
-* react-router-dom: For page navigation.
-* @schedule-x/react: The calendar library I used.
-* TailwindCSS/basic CSS: To style the components.
-
-PHP Backend:
-
-* MySQLi: To interact with the MySQL database.
-* JSON: To pass data between the frontend and backend.
